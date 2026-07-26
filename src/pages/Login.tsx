@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { useAuthStore } from "../store/auth";
 import { btnPrimary, Field, inputCls } from "../components/ui";
-import { IconMic } from "../components/icons";
+import { Wordmark } from "../components/Logo";
 
 export function LoginPage() {
   const token = useAuthStore((s) => s.token);
@@ -40,15 +40,11 @@ export function LoginPage() {
     <div className="flex h-full items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-fg">
-            <IconMic width={22} height={22} />
-          </span>
-          <h1 className="text-xl font-semibold tracking-tight text-fg">
-            Voint Admin Panel
+          <h1 className="mb-2.5">
+            <Wordmark size="2.25rem" />
           </h1>
-          <p className="mt-1 text-sm text-fg-muted">
-            Platforma idarəetməsinə daxil olun
-          </p>
+          <p className="text-sm text-fg-muted">Admin Panel</p>
+          <p className="mt-1 text-xs text-fg-faint">Platforma idarəetməsinə daxil olun</p>
         </div>
 
         <form
