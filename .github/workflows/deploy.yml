@@ -1,0 +1,41 @@
+name: Build və deploy
+
+# main-ə push olunanda: əvvəlcə build yoxlanılır, uğurlu olsa serverə deploy edilir.
+# Serverdə həmçinin hər dəqiqə işləyən systemd taymeri var (voint-deploy.timer) —
+# bu workflow onunla eyni skripti çağırır, sadəcə gözləmədən, dərhal.
+# Yəni Actions sıradan çıxsa belə deploy dayanmır, sadəcə 60 saniyəyə qədər gecikir.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # tsc -b && vite build — tip xətası varsa burada tutulur, serverə çatmır
+      - run: npm run build
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Serverdə deploy skriptini işə sal
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 173.249.54.197
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: /opt/voint/deploy.sh
