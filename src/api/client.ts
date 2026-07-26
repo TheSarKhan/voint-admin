@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../store/auth";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
@@ -17,16 +17,71 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 → sessiyani bitir ve login sehifesine yonlendir
+/**
+ * Access token 60 deqiqe yasayir. Vaxti bitende backend 401 qaytarir; biz refresh
+ * token ile sessiyani sessizce yenileyib sorgunu tekrarlayiriq — istifadeci saatda
+ * bir defe login sehifesine atilmasin.
+ *
+ * Eyni anda bir nece sorgu 401 alsa, hamisi eyni refresh emeliyyatini gozleyir
+ * (asagidaki `pending`), yoxsa her biri ayrica refresh cagirar ve bir-birinin
+ * tokenini kohnelder.
+ */
+let pending: Promise<string> | null = null;
+
+async function refreshSession(): Promise<string> {
+  const { refreshToken, setSession, user } = useAuthStore.getState();
+  if (!refreshToken || !user) {
+    throw new Error("refresh token yoxdur");
+  }
+  // Bu interceptor-a yeniden dusmesin deye xam axios ile cagirilir.
+  const { data } = await axios.post<{
+    accessToken: string;
+    refreshToken: string;
+  }>(`${API_URL}/api/v1/auth/refresh`, { refreshToken });
+  setSession(data.accessToken, user, data.refreshToken);
+  return data.accessToken;
+}
+
+function forceLogout() {
+  useAuthStore.getState().logout();
+  if (window.location.pathname !== "/login") {
+    window.location.assign("/login");
+  }
+}
+
 http.interceptors.response.use(
   (res) => res,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
-      if (window.location.pathname !== "/login") {
-        window.location.assign("/login");
+  async (error: AxiosError) => {
+    const original = error.config as
+      | (InternalAxiosRequestConfig & { _retried?: boolean })
+      | undefined;
+
+    if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // /auth/* ozu 401 verirse yenilemeye cehd etmek menasizdir — dovreye dusme riski var.
+    const isAuthCall = original?.url?.includes("/auth/");
+
+    if (original && !original._retried && !isAuthCall) {
+      original._retried = true;
+      try {
+        pending =
+          pending ??
+          refreshSession().finally(() => {
+            pending = null;
+          });
+        const token = await pending;
+        original.headers.Authorization = `Bearer ${token}`;
+        return http(original);
+      } catch {
+        // Refresh token da bitib — sessiya hequqeten qurtarib.
+        forceLogout();
+        return Promise.reject(error);
       }
     }
+
+    forceLogout();
     return Promise.reject(error);
   },
 );
