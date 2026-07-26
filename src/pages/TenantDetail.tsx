@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getTenantAnalytics } from "../api/analytics";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
+import { BillingSection } from "../components/BillingSection";
 import { IconArrowLeft } from "../components/icons";
 import { StatCard } from "../components/StatCard";
 import { Card, PageHeader, Spinner } from "../components/ui";
@@ -101,6 +102,8 @@ export function TenantDetailPage() {
           <p className="text-sm text-fg-faint">Hələ zəng məlumatı yoxdur.</p>
         )}
       </Card>
+
+      <BillingSection tenant={tenant} onPlanSaved={setTenant} />
 
       <Card className="mt-6 p-6">
         <h2 className="mb-5 text-sm font-medium text-fg">Konfiqurasiya</h2>

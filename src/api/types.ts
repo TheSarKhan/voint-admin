@@ -26,7 +26,52 @@ export interface Tenant {
   workingHours: string | null;
   handoffNumber: string | null;
   languageConfig: string | null;
+  // Kommersiya sertleri (AZN). Yalniz SUPER_ADMIN deyise biler.
+  monthlyFee: number;
+  includedMinutes: number;
+  overagePerMinute: number;
   createdAt: string; // ISO
+}
+
+// Backend (com.starsoft.voint.usage.dto.UsageReport) - bir tenant-in bir ayliq
+// istifadesi, bizim provayderlere odediyimiz xerc ve musterinin bize borcu.
+// Butun mebleglar AZN-dedir ki, ust-uste muqayise edile bilsin.
+export interface UsageReport {
+  tenantId: string;
+  tenantName: string;
+  month: string; // "2026-07"
+  usage: {
+    calls: number;
+    durationSeconds: number;
+    minutes: number;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    ttsCharacters: number;
+  };
+  cost: {
+    tts: number;
+    llm: number;
+    vapi: number;
+    stt: number;
+    telephony: number;
+    total: number;
+  };
+  plan: {
+    monthlyFee: number;
+    includedMinutes: number;
+    overagePerMinute: number;
+    overageMinutes: number;
+  };
+  invoiceAzn: number;
+  marginAzn: number;
+  marginPercent: number | null;
+}
+
+export interface BillingPlanInput {
+  monthlyFee: number;
+  includedMinutes: number;
+  overagePerMinute: number;
 }
 
 // Backend (com.starsoft.voint.tenant.dto.TenantCreateRequest) - name mecburidir,

@@ -4,6 +4,8 @@ import { Layout } from "../components/Layout";
 import { LoginPage } from "../pages/Login";
 import { TenantsPage } from "../pages/Tenants";
 import { TenantDetailPage } from "../pages/TenantDetail";
+import { UsagePage } from "../pages/Usage";
+import { InvoicePage } from "../pages/Invoice";
 
 function ProtectedRoute() {
   const token = useAuthStore((s) => s.token);
@@ -22,7 +24,9 @@ export const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { path: "/", element: <TenantsPage /> },
+          { path: "/usage", element: <UsagePage /> },
           { path: "/tenants/:tenantId", element: <TenantDetailPage /> },
+          { path: "/tenants/:tenantId/invoice", element: <InvoicePage /> },
         ],
       },
     ],

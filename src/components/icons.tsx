@@ -132,6 +132,15 @@ export const IconDocument = (p: IconProps) => (
   </svg>
 );
 
+// Qaime / hesablasma: asagi keneri disli veraq, ustunde metn setirleri.
+export const IconReceipt = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M5 3h14v18l-2.33-1.5L14.33 21 12 19.5 9.67 21l-2.34-1.5L5 21z" />
+    <line x1="9" y1="8" x2="15" y2="8" />
+    <line x1="9" y1="12" x2="15" y2="12" />
+  </svg>
+);
+
 export const IconFolder = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

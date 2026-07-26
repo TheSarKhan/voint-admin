@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-import { IconBuilding, IconLogout } from "./icons";
+import { IconBuilding, IconLogout, IconReceipt } from "./icons";
 import { Wordmark } from "./Logo";
 import type { ComponentType, SVGProps } from "react";
 
@@ -12,6 +12,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: "/", label: "Bizneslər", icon: IconBuilding },
+  { to: "/usage", label: "Hesablaşma", icon: IconReceipt },
 ];
 
 export function Layout() {
