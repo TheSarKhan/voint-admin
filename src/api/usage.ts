@@ -1,5 +1,16 @@
 import { http } from "./client";
-import type { BillingPlanInput, Tenant, UsageReport } from "./types";
+import type {
+  BillingPlanInput,
+  ProviderHealth,
+  Tenant,
+  UsageReport,
+} from "./types";
+
+/** Zeng ucun lazim olan xarici xidmetlerin veziyyeti (SUPER_ADMIN-only). */
+export async function listProviderHealth(): Promise<ProviderHealth[]> {
+  const { data } = await http.get<ProviderHealth[]>("/admin/providers");
+  return data;
+}
 
 /**
  * Butun bizneslerin bir ayliq istifadesi ve hesabi (SUPER_ADMIN-only).

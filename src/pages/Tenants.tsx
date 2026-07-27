@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createTenant, listTenants } from "../api/tenants";
 import type { Tenant, TenantCreateInput } from "../api/types";
 import { IconPlus } from "../components/icons";
+import { ProviderStatus } from "../components/ProviderStatus";
 import {
   btnGhost,
   btnPrimary,
@@ -167,6 +168,10 @@ export function TenantsPage() {
           </button>
         }
       />
+
+      <div className="mb-6">
+        <ProviderStatus />
+      </div>
 
       {error && <p className="text-sm text-err">{error}</p>}
       {!error && !tenants && <Spinner />}

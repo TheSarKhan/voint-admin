@@ -68,6 +68,15 @@ export interface UsageReport {
   marginPercent: number | null;
 }
 
+// Backend (com.starsoft.voint.health.ProviderHealth) — zeng ucun lazim olan
+// xarici xidmetlerin son yoxlanilmis veziyyeti.
+export interface ProviderHealth {
+  name: string;
+  status: "OK" | "DOWN" | "NOT_CONFIGURED";
+  detail: string;
+  checkedAt: string; // ISO
+}
+
 export interface BillingPlanInput {
   monthlyFee: number;
   includedMinutes: number;
