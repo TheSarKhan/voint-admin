@@ -1,6 +1,7 @@
 import { http } from "./client";
 import type {
   BillingPlanInput,
+  PageResult,
   ProviderHealth,
   Tenant,
   UsageReport,
@@ -16,10 +17,15 @@ export async function listProviderHealth(): Promise<ProviderHealth[]> {
  * Butun bizneslerin bir ayliq istifadesi ve hesabi (SUPER_ADMIN-only).
  * `month` bosdursa backend cari ayi goturur (Baki vaxti ile).
  */
-export async function listUsage(month?: string): Promise<UsageReport[]> {
-  const { data } = await http.get<UsageReport[]>("/admin/usage", {
-    params: month ? { month } : undefined,
-  });
+export async function listUsage(params: {
+  month?: string;
+  q?: string;
+  page?: number;
+  size?: number;
+  sort?: string | null;
+  direction?: string;
+}): Promise<PageResult<UsageReport>> {
+  const { data } = await http.get<PageResult<UsageReport>>("/admin/usage", { params });
   return data;
 }
 

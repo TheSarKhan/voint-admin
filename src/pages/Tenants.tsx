@@ -4,20 +4,19 @@ import { Link } from "react-router-dom";
 import { createTenant, listTenants } from "../api/tenants";
 import { getPublicConfig } from "../api/publicConfig";
 import type { Tenant, TenantCreateInput } from "../api/types";
+import { DataTable, type Column } from "../components/DataTable";
 import { IconPlus } from "../components/icons";
 import { ProviderStatus } from "../components/ProviderStatus";
 import {
   btnGhost,
   btnPrimary,
-  Card,
-  EmptyState,
   Field,
   inputCls,
   Modal,
   PageHeader,
-  Spinner,
+  StatusText,
 } from "../components/ui";
-import { formatDate } from "../lib/format";
+import { formatDate, formatMoney } from "../lib/format";
 
 const emptyForm: TenantCreateInput = {
   name: "",
@@ -34,7 +33,7 @@ function CreateTenantModal({
   onCreated,
 }: {
   onClose: () => void;
-  onCreated: (tenant: Tenant) => void;
+  onCreated: () => void;
 }) {
   const [form, setForm] = useState<TenantCreateInput>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -50,7 +49,7 @@ function CreateTenantModal({
     setSaving(true);
     setError(null);
     try {
-      const tenant = await createTenant({
+      await createTenant({
         name: form.name.trim(),
         subdomain: form.subdomain?.trim() || undefined,
         phoneNumber: form.phoneNumber?.trim() || undefined,
@@ -59,7 +58,7 @@ function CreateTenantModal({
         handoffNumber: form.handoffNumber?.trim() || undefined,
         languageConfig: form.languageConfig?.trim() || undefined,
       });
-      onCreated(tenant);
+      onCreated();
       onClose();
     } catch (e) {
       // Backend subdomain ucun konkret sebeb qaytarir ("bu unvan artiq istifade olunur",
@@ -168,34 +167,78 @@ function CreateTenantModal({
 }
 
 export function TenantsPage() {
-  const [tenants, setTenants] = useState<Tenant[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [domain, setDomain] = useState("");
+  // Yeni biznes yaradilanda cedvele "yeniden yukle" siqnali.
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     getPublicConfig().then((c) => setDomain(c.panelDomain));
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    listTenants()
-      .then((res) => {
-        if (!cancelled) setTenants(res);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Bizneslər yüklənə bilmədi.");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const columns: Column<Tenant>[] = [
+    {
+      key: "name",
+      header: "Biznes",
+      cell: (t) => (
+        <Link to={`/tenants/${t.id}`} className="font-medium text-fg hover:underline">
+          {t.name}
+        </Link>
+      ),
+    },
+    {
+      key: "subdomain",
+      header: "Panel ünvanı",
+      cell: (t) =>
+        t.subdomain ? (
+          <a
+            href={`https://${t.subdomain}.${domain}`}
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono text-xs text-fg-muted hover:text-fg hover:underline"
+          >
+            {t.subdomain}.{domain}
+          </a>
+        ) : (
+          <StatusText tone="warn">yoxdur</StatusText>
+        ),
+    },
+    {
+      // Vapi-de agent qurulmayibsa bu biznes zeng qebul etmir — siyahida gorunsun.
+      header: "Telefon agenti",
+      cell: (t) =>
+        t.vapiAssistantId ? (
+          <StatusText tone="ok">qurulub</StatusText>
+        ) : (
+          <StatusText tone="err">qurulmayıb</StatusText>
+        ),
+    },
+    {
+      key: "phoneNumber",
+      header: "Telefon nömrəsi",
+      cell: (t) => <span className="text-fg-muted">{t.phoneNumber ?? "—"}</span>,
+    },
+    {
+      key: "monthlyFee",
+      header: "Aylıq",
+      align: "right",
+      numeric: true,
+      cell: (t) => <span className="text-fg-muted">{formatMoney(t.monthlyFee)}</span>,
+    },
+    {
+      key: "createdAt",
+      header: "Yaradılıb",
+      align: "right",
+      numeric: true,
+      cell: (t) => <span className="text-fg-muted">{formatDate(t.createdAt)}</span>,
+    },
+  ];
 
   return (
     <div>
       <PageHeader
         title="Bizneslər"
-        subtitle="Platformadakı bütün tenant-ları idarə edin"
+        subtitle="Platformadakı bütün müəssisələr"
         actions={
           <button className={btnPrimary} onClick={() => setModalOpen(true)}>
             <IconPlus width={16} height={16} />
@@ -208,64 +251,28 @@ export function TenantsPage() {
         <ProviderStatus />
       </div>
 
-      {error && <p className="text-sm text-err">{error}</p>}
-      {!error && !tenants && <Spinner />}
-
-      {tenants && tenants.length === 0 && (
-        <Card>
-          <EmptyState message="Hələ heç bir biznes yoxdur. Yeni biznes əlavə edin." />
-        </Card>
-      )}
-
-      {tenants && tenants.length > 0 && (
-        <Card className="overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wide text-fg-muted">
-                <th className="px-5 py-3 font-medium">Biznes</th>
-                <th className="px-5 py-3 font-medium">Panel ünvanı</th>
-                <th className="px-5 py-3 font-medium">Telefon nömrəsi</th>
-                <th className="px-5 py-3 font-medium">Yaradılıb</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.map((t) => (
-                <tr
-                  key={t.id}
-                  className="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-surface-2/60"
-                >
-                  <td className="px-5 py-3">
-                    <Link to={`/tenants/${t.id}`} className="font-medium text-fg hover:underline">
-                      {t.name}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3 text-fg-muted">
-                    {t.subdomain ? (
-                      <a
-                        href={`https://${t.subdomain}.${domain}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-mono text-xs hover:text-fg hover:underline"
-                      >
-                        {t.subdomain}.{domain}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-fg-muted">{t.phoneNumber ?? "—"}</td>
-                  <td className="px-5 py-3 text-fg-muted">{formatDate(t.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
+      <DataTable
+        columns={columns}
+        rowKey={(t) => t.id}
+        defaultSort="name"
+        searchPlaceholder="Ad, ünvan və ya nömrə…"
+        emptyMessage="Hələ heç bir biznes yoxdur."
+        resetKey={reload}
+        fetchPage={(state) =>
+          listTenants({
+            q: state.q || undefined,
+            page: state.page,
+            size: state.size,
+            sort: state.sort,
+            direction: state.direction,
+          })
+        }
+      />
 
       {modalOpen && (
         <CreateTenantModal
           onClose={() => setModalOpen(false)}
-          onCreated={(tenant) => setTenants((prev) => [...(prev ?? []), tenant])}
+          onCreated={() => setReload((n) => n + 1)}
         />
       )}
     </div>

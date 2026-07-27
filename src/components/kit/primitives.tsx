@@ -759,26 +759,24 @@ function pageList(page: number, pageCount: number): Array<number | "gap"> {
   return out;
 }
 
+/**
+ * Yalniz sehife duymeleri. Cercive, doldurma ve "1-20 / 340" etiketi QESDEN yoxdur —
+ * onlari saxlayan konteyner teyin edir, yoxsa cedvelin altinda cut sərhəd cixir.
+ */
 export function Pagination({
   page,
   pageCount,
   onChange,
-  totalLabel,
 }: {
   page: number;
   pageCount: number;
   onChange: (page: number) => void;
-  totalLabel?: string;
 }) {
-  if (pageCount <= 1 && !totalLabel) return null;
+  if (pageCount <= 1) return null;
   const itemCls =
     "inline-flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40";
   return (
-    <nav
-      aria-label="Səhifələmə"
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3"
-    >
-      <span className="text-xs text-fg-faint">{totalLabel}</span>
+    <nav aria-label="Səhifələmə" className="flex items-center gap-1">
       <div className="flex items-center gap-1">
         <button
           type="button"

@@ -1,9 +1,15 @@
 import { http } from "./client";
-import type { Tenant, TenantCreateInput } from "./types";
+import type { PageResult, Tenant, TenantCreateInput } from "./types";
 
-/** Butun tenant-lari qaytarir (SUPER_ADMIN-only endpoint). */
-export async function listTenants(): Promise<Tenant[]> {
-  const { data } = await http.get<Tenant[]>("/tenants");
+/** Serverden sehifelenmis, siralanmis ve axtarilmis tenant siyahisi. */
+export async function listTenants(params: {
+  q?: string;
+  page?: number;
+  size?: number;
+  sort?: string | null;
+  direction?: string;
+}): Promise<PageResult<Tenant>> {
+  const { data } = await http.get<PageResult<Tenant>>("/tenants", { params });
   return data;
 }
 

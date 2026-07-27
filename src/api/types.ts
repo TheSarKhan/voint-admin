@@ -1,3 +1,16 @@
+// Backend (com.starsoft.voint.common.dto.PageResponse) — butun sehifelenmis
+// siyahilar ucun eyni zerf. `sort`/`direction` serverin FAKTIKI tetbiq etdiyidir:
+// bilinmeyen sutun defolta dusur, cedvel de real veziyyeti gostermelidir.
+export interface PageResult<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  sort: string | null;
+  direction: string | null;
+}
+
 // voint-backend /api/v1 modelleri (frontend gorunusu)
 
 export interface AuthUser {
