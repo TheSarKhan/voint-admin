@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
 import { Link } from "react-router-dom";
 import { createTenant, listTenants } from "../api/tenants";
+import { getPublicConfig } from "../api/publicConfig";
 import type { Tenant, TenantCreateInput } from "../api/types";
 import { IconPlus } from "../components/icons";
 import { ProviderStatus } from "../components/ProviderStatus";
@@ -38,6 +39,11 @@ function CreateTenantModal({
   const [form, setForm] = useState<TenantCreateInput>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [domain, setDomain] = useState("");
+
+  useEffect(() => {
+    getPublicConfig().then((c) => setDomain(c.panelDomain));
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -88,7 +94,7 @@ function CreateTenantModal({
                 setForm({ ...form, subdomain: e.target.value.toLowerCase() })
               }
             />
-            <span className="shrink-0 text-sm text-fg-muted">.voint.az</span>
+            <span className="shrink-0 text-sm text-fg-muted">.{domain}</span>
           </div>
           <p className="mt-1 text-xs text-fg-faint">
             Bu biznesin öz paneli bu ünvanda açılacaq. Kiçik hərf, rəqəm və defis.
@@ -165,6 +171,11 @@ export function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [domain, setDomain] = useState("");
+
+  useEffect(() => {
+    getPublicConfig().then((c) => setDomain(c.panelDomain));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,7 +241,14 @@ export function TenantsPage() {
                   </td>
                   <td className="px-5 py-3 text-fg-muted">
                     {t.subdomain ? (
-                      <span className="font-mono text-xs">{t.subdomain}.voint.az</span>
+                      <a
+                        href={`https://${t.subdomain}.${domain}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-xs hover:text-fg hover:underline"
+                      >
+                        {t.subdomain}.{domain}
+                      </a>
                     ) : (
                       "—"
                     )}
