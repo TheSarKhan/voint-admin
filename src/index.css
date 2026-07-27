@@ -16,6 +16,10 @@
   --color-warn: #d9b96a;
   --color-err: #d97a6a;
 
+  /* Brend yasili. Yalniz aksent kimi: fon+qara metn, arclar, focus ring.
+     Ag fonda metn kimi kontrasti 1.36:1-dir — oxunmur, ona gore metn rengi DEYIL. */
+  --color-brand: #39FF14;
+
   --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, Arial, sans-serif;
 }
