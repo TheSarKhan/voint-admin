@@ -30,6 +30,8 @@ export interface Tenant {
   monthlyFee: number;
   includedMinutes: number;
   overagePerMinute: number;
+  /** Sert aylik tavan (deqiqe); 0 = limitsiz. Plandan ferqlidir — bu xerc muhafizesidir. */
+  monthlyMinuteCap: number;
   createdAt: string; // ISO
 }
 
@@ -62,6 +64,8 @@ export interface UsageReport {
     includedMinutes: number;
     overagePerMinute: number;
     overageMinutes: number;
+    monthlyMinuteCap: number;
+    capPercentUsed: number | null;
   };
   invoiceAzn: number;
   marginAzn: number;
@@ -96,6 +100,7 @@ export interface BillingPlanInput {
   monthlyFee: number;
   includedMinutes: number;
   overagePerMinute: number;
+  monthlyMinuteCap: number;
 }
 
 // Backend (com.starsoft.voint.tenant.dto.TenantCreateRequest) - name mecburidir,

@@ -75,6 +75,7 @@ export function BillingSection({
   const [overagePerMinute, setOveragePerMinute] = useState(
     String(tenant.overagePerMinute ?? 0),
   );
+  const [minuteCap, setMinuteCap] = useState(String(tenant.monthlyMinuteCap ?? 0));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -108,6 +109,7 @@ export function BillingSection({
         monthlyFee: Number(monthlyFee),
         includedMinutes: Number(includedMinutes),
         overagePerMinute: Number(overagePerMinute),
+        monthlyMinuteCap: Number(minuteCap),
       });
       onPlanSaved(updated);
       setSaved(true);
@@ -215,6 +217,15 @@ export function BillingSection({
                       : undefined
                   }
                 />
+                <Row
+                  label="Aylıq tavan"
+                  value={
+                    report.plan.monthlyMinuteCap > 0
+                      ? `${formatNumber(report.plan.monthlyMinuteCap)} dəq · ${report.plan.capPercentUsed}%`
+                      : "limitsiz"
+                  }
+                  hint={report.plan.monthlyMinuteCap > 0 ? "hədd" : undefined}
+                />
                 <Row label="Qaimə" value={formatMoney(report.invoiceAzn)} strong />
                 <Row
                   label="Qazanc"
@@ -225,6 +236,26 @@ export function BillingSection({
                   }
                 />
               </div>
+
+              {report.plan.capPercentUsed !== null &&
+                report.plan.capPercentUsed >= 80 && (
+                  <div className="mt-4">
+                    <Alert
+                      tone={report.plan.capPercentUsed >= 100 ? "err" : "warn"}
+                      title={
+                        report.plan.capPercentUsed >= 100
+                          ? "Aylıq tavan doldu — yeni zənglər qəbul edilmir"
+                          : "Aylıq tavana yaxınlaşır"
+                      }
+                    >
+                      {formatMinutes(report.usage.minutes)} /{" "}
+                      {formatNumber(report.plan.monthlyMinuteCap)} dəqiqə işlədilib.
+                      {report.plan.capPercentUsed >= 100
+                        ? " Agent zəngləri operatora yönləndirir. Tavanı artırmaq üçün aşağıdakı sahəni dəyiş."
+                        : " Tavan dolanda agent yeni zəngləri qəbul etməyəcək."}
+                    </Alert>
+                  </div>
+                )}
 
               {report.marginAzn < 0 && (
                 <div className="mt-4">
@@ -239,7 +270,7 @@ export function BillingSection({
                 <p className="mb-3 text-xs font-medium uppercase tracking-wide text-fg-muted">
                   Kommersiya şərtləri
                 </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <Input
                     label="Aylıq (₼)"
                     type="number"
@@ -263,6 +294,15 @@ export function BillingSection({
                     step="0.01"
                     value={overagePerMinute}
                     onChange={(e) => setOveragePerMinute(e.target.value)}
+                  />
+                  <Input
+                    label="Aylıq tavan"
+                    help="0 = limitsiz"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={minuteCap}
+                    onChange={(e) => setMinuteCap(e.target.value)}
                   />
                 </div>
                 {saveError && (
