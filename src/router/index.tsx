@@ -6,6 +6,7 @@ import { TenantsPage } from "../pages/Tenants";
 import { TenantDetailPage } from "../pages/TenantDetail";
 import { UsagePage } from "../pages/Usage";
 import { InvoicePage } from "../pages/Invoice";
+import { SettingsPage } from "../pages/Settings";
 
 function ProtectedRoute() {
   const token = useAuthStore((s) => s.token);
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/", element: <TenantsPage /> },
           { path: "/usage", element: <UsagePage /> },
+          { path: "/settings", element: <SettingsPage /> },
           { path: "/tenants/:tenantId", element: <TenantDetailPage /> },
           { path: "/tenants/:tenantId/invoice", element: <InvoicePage /> },
         ],

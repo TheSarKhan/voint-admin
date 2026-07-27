@@ -77,6 +77,21 @@ export interface ProviderHealth {
   checkedAt: string; // ISO
 }
 
+// Backend (com.starsoft.voint.settings.dto.SettingView) — provayder acarlari.
+// `hint` maskalanmis izdir (son dord simvol); acarin ozu heç vaxt brauzere gelmir.
+export interface SettingView {
+  key: string;
+  label: string;
+  description: string;
+  secret: boolean;
+  configured: boolean;
+  /** true — panelden idare olunur; false — serverin konfiqurasiyasindan gelir. */
+  managedHere: boolean;
+  hint: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
 export interface BillingPlanInput {
   monthlyFee: number;
   includedMinutes: number;
