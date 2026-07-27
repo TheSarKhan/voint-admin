@@ -45,7 +45,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <h1 className="mb-2.5">
-            <Wordmark size="2.25rem" />
+            <Wordmark size="2.9rem" />
           </h1>
           <p className="text-sm text-fg-muted">Admin Panel</p>
           <p className="mt-1 text-xs text-fg-faint">Platforma idarəetməsinə daxil olun</p>

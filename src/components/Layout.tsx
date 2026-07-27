@@ -31,7 +31,7 @@ export function Layout() {
       {/* Sidebar */}
       <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-surface">
         <div className="flex flex-col gap-1 border-b border-border px-5 pb-4 pt-6">
-          <Wordmark size="1.25rem" />
+          <Wordmark size="1.6rem" />
           <p className="text-[11px] text-fg-faint">Admin Panel</p>
         </div>
 

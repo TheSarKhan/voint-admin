@@ -1,11 +1,10 @@
-// Voint loqosu — "Voint" soz-isaresi + "t" herfinin sag-yuxarisinda uc ic-ice yasil arc.
+// Voint loqosu — "Voint." soz-isaresi + "t" herfinin sag-yuxarisinda uc ic-ice yasil arc.
 //
-// Neden PNG deyil: brend fayllari 1786px enindedir ve eninin yarisi bos sahedir — 20px-lik
-// sidebar-da hem yumsaq gorunur, hem de lazimsiz agirliq getirir. Burada eyni loqo vektor
-// kimi qurulub: her olcude iti qalir.
+// Neden PNG deyil: brend fayllari 1786px enindedir ve eninin yarisi bos kenardir — 20px-lik
+// sidebar-da hem yumsaq gorunur, hem de lazimsiz agirliq getirir. Vektor her olcude iti qalir.
 //
 // Renge uygunlasma: soz-isare `currentColor` ile yazilir, arclar HEMISE yasil qalir.
-// Qara temada ag metn + yasil arc ("Dark" fayli), isiqli temada qara metn + yasil arc
+// Qara temada ag metn + yasil arc ("Dark" fayli), isiqli fonda qara metn + yasil arc
 // ("White" fayli). Iki ayri fayl deyil — bir komponent, fona gore ozu uygunlasir.
 import type { CSSProperties, SVGProps } from "react";
 
@@ -16,7 +15,7 @@ const BRAND = "#39FF14";
 
 /**
  * Uc konsentrik arc: asagi-soldaki merkezden yuxari-saga yayilan siqnal dalgalari.
- * Radiuslar 8/14/20, hamisi eyni merkezden — loqodaki nisbet.
+ * Radiuslar 8/14/20, hamisi eyni merkezden — brend faylindaki nisbet.
  */
 export const BrandArcs = ({ style, ...props }: IconProps) => (
   <svg
@@ -67,7 +66,17 @@ interface WordmarkProps {
   style?: CSSProperties;
 }
 
-/** Tam soz-isare: "Voint" + "t"-nin sag-yuxarisinda yasil arclar. */
+/**
+ * Tam soz-isare: "Voint." + "t"-nin sag-yuxarisinda yasil arclar.
+ *
+ * Arclar butun sozun deyil, MEHZ "t"-nin yaninda dayanir — ona gore "t" ayrica span-dedir.
+ * Sonda nöqte var, arclar ise onun ustunden asir; belə olmasa nöqte elave olunanda arclar
+ * sağa surusherdi.
+ *
+ * Olculer brend faylindan cixarilib: orada cap hundurluyu ~240px, arc qrupu ~140x150px,
+ * arcin alt kenari bazadan ~150px yuxarida ve sol kenari "t"-nin sag kenarindan ~45px
+ * iceridedir. Poppins-de cap hundurluyu ~0.70em oldugu ucun bunlar asagidaki em deyerleridir.
+ */
 export function Wordmark({ size = "1.5rem", className = "", style }: WordmarkProps) {
   return (
     <span
@@ -76,20 +85,21 @@ export function Wordmark({ size = "1.5rem", className = "", style }: WordmarkPro
       aria-label="Voint"
       role="img"
     >
+      <span aria-hidden="true">Voin</span>
       <span aria-hidden="true" className="relative inline-block">
-        Voint
-        {/* Arclar "t"-nin ustune, sag kenardan bir az iceri oturur — loqodaki kimi. */}
+        t
         <BrandArcs
           className="absolute"
           style={{
             left: "100%",
-            bottom: "0.30em",
-            marginLeft: "-0.10em",
-            width: "0.52em",
-            height: "0.52em",
+            marginLeft: "-0.13em",
+            bottom: "0.44em",
+            width: "0.41em",
+            height: "0.44em",
           }}
         />
       </span>
+      <span aria-hidden="true">.</span>
     </span>
   );
 }
