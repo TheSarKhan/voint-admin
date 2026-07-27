@@ -11,6 +11,7 @@ import {
   formatMoney,
   formatMonth,
   formatNumber,
+  monthEndDate,
 } from "../lib/format";
 
 /**
@@ -25,16 +26,6 @@ import {
 /** Deterministik qaime nomresi: eyni ay + eyni biznes -> her defe eyni nomre. */
 function invoiceNumber(tenantId: string, month: string): string {
   return `VOINT-${month.replace("-", "")}-${tenantId.slice(0, 4).toUpperCase()}`;
-}
-
-/** Ayin son gunu - qaimenin tarixi. */
-function invoiceDate(month: string): string {
-  const [y, m] = month.split("-").map(Number);
-  return new Date(y, m, 0).toLocaleDateString("az-AZ", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
 }
 
 interface LineItem {
@@ -167,7 +158,7 @@ export function InvoicePage() {
               {invoiceNumber(report.tenantId, report.month)}
             </p>
             <p className="mt-0.5 text-xs text-[#555]">
-              {invoiceDate(report.month)}
+              {monthEndDate(report.month)}
             </p>
           </div>
         </header>

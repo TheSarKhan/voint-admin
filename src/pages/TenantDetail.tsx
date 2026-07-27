@@ -8,7 +8,13 @@ import { VapiStatus } from "../components/VapiStatus";
 import { IconArrowLeft } from "../components/icons";
 import { StatCard } from "../components/StatCard";
 import { Card, PageHeader, Spinner } from "../components/ui";
-import { formatDate, formatDateTime, formatDuration, formatPercent } from "../lib/format";
+import {
+  formatDate,
+  formatDateTime,
+  formatDayShort,
+  formatDuration,
+  formatPercent,
+} from "../lib/format";
 
 function CallsBarChart({ data }: { data: AnalyticsOverview["callsByDay"] }) {
   const max = Math.max(...data.map((d) => d.count), 1);
@@ -26,7 +32,7 @@ function CallsBarChart({ data }: { data: AnalyticsOverview["callsByDay"] }) {
               style={{ height: `${h}%` }}
               title={`${formatDate(d.date)}: ${d.count} zəng`}
             />
-            <span className="text-[11px] text-fg-faint">{formatDate(d.date)}</span>
+            <span className="text-[11px] text-fg-faint">{formatDayShort(d.date)}</span>
           </div>
         );
       })}
