@@ -81,7 +81,9 @@ export function Wordmark({ size = "1.5rem", className = "", style }: WordmarkPro
   return (
     <span
       className={`inline-block font-semibold tracking-[-0.03em] leading-none whitespace-nowrap ${className}`}
-      style={{ fontSize: size, ...style }}
+      // Arclar "t"-nin ustunden yuxari cixir; leading-none ile setir qutusu 1em oldugu ucun
+      // yer ayrilmasa yuxaridaki elementle ust-uste dusurler.
+      style={{ fontSize: size, paddingTop: "0.34em", ...style }}
       aria-label="Voint"
       role="img"
     >
@@ -91,11 +93,13 @@ export function Wordmark({ size = "1.5rem", className = "", style }: WordmarkPro
         <BrandArcs
           className="absolute"
           style={{
+            // "t"-nin USTUNDE dayanir, yaninda yox: sag kenardan geriye cekilib
+            // herfin uzerine oturur, alt kenari ise "t"-nin zirvesinden yuxaridadir.
             left: "100%",
-            marginLeft: "-0.13em",
-            bottom: "0.44em",
-            width: "0.41em",
-            height: "0.44em",
+            marginLeft: "-0.34em",
+            bottom: "0.74em",
+            width: "0.42em",
+            height: "0.42em",
           }}
         />
       </span>
