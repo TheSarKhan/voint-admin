@@ -148,3 +148,21 @@ export interface AnalyticsOverview {
   avgDurationSec: number;
   callsByDay: { date: string; count: number }[];
 }
+
+/** Landing sehifesindeki pilot formundan gelen sorgu. Hele musteri deyil. */
+export type LeadStatus = "NEW" | "CONTACTED" | "CONVERTED" | "REJECTED";
+
+export interface Lead {
+  id: string;
+  fullName: string;
+  company: string;
+  industry?: string | null;
+  phone: string;
+  email: string;
+  dailyCallVolume?: string | null;
+  source: string;
+  status: LeadStatus;
+  note?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+}

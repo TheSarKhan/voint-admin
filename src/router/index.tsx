@@ -4,6 +4,7 @@ import { Layout } from "../components/Layout";
 import { LoginPage } from "../pages/Login";
 import { TenantsPage } from "../pages/Tenants";
 import { TenantDetailPage } from "../pages/TenantDetail";
+import { LeadsPage } from "../pages/Leads";
 import { UsagePage } from "../pages/Usage";
 import { InvoicePage } from "../pages/Invoice";
 import { SettingsPage } from "../pages/Settings";
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { path: "/", element: <TenantsPage /> },
+          { path: "/leads", element: <LeadsPage /> },
           { path: "/usage", element: <UsagePage /> },
           { path: "/settings", element: <SettingsPage /> },
           { path: "/tenants/:tenantKey", element: <TenantDetailPage /> },
