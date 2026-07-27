@@ -33,12 +33,32 @@ async function fetchMeWithToken(accessToken: string): Promise<AuthUser> {
   return toAuthUser(data);
 }
 
+/**
+ * Bu panel yalniz SUPER_ADMIN ucundur.
+ *
+ * Rolu burada yoxlamaq vacibdir: backend giris ucun her keceli istifadecini qebul edir,
+ * lakin admin endpointleri SUPER_ADMIN teleb edir. Yoxlamasaq, muessise admini (mes.
+ * admin@ces.az) rahat daxil olur, panel acilir — ve sonra HER sorgu 403 ile dusur,
+ * hec bir izahat olmadan. Sistem sebebi bilir; demelidir.
+ */
+export class WrongPanelError extends Error {
+  constructor() {
+    super(
+      "Bu hesabın admin panelə girişi yoxdur. Müəssisə hesabları öz panelindən istifadə edir: voint.sarkhan.az",
+    );
+    this.name = "WrongPanelError";
+  }
+}
+
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const { data } = await http.post<BackendTokenResponse>("/auth/login", {
     email,
     password,
   });
   const user = await fetchMeWithToken(data.accessToken);
+  if (user.role !== "SUPER_ADMIN") {
+    throw new WrongPanelError();
+  }
   return { token: data.accessToken, refreshToken: data.refreshToken, user };
 }
 

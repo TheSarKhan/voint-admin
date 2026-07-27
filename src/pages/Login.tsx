@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { login } from "../api/auth";
+import { login, WrongPanelError } from "../api/auth";
 import { useAuthStore } from "../store/auth";
 import { btnPrimary, Field, inputCls } from "../components/ui";
 import { Wordmark } from "../components/Logo";
@@ -26,10 +26,14 @@ export function LoginPage() {
       setSession(res.token, res.user, res.refreshToken);
       navigate("/", { replace: true });
     } catch (err) {
+      // Yanlis panel xetasi konkretdir — oldugu kimi gosterilir, "melumatlari yoxlayin"
+      // deyil, cunki melumatlar duzgundur, sadece burasi onlarin yeri deyil.
       const message =
-        err instanceof Error && !("response" in err)
+        err instanceof WrongPanelError
           ? err.message
-          : "Giriş alınmadı. Məlumatları yoxlayın.";
+          : err instanceof Error && !("response" in err)
+            ? err.message
+            : "Giriş alınmadı. Məlumatları yoxlayın.";
       setError(message);
     } finally {
       setLoading(false);
