@@ -62,7 +62,7 @@ function buildLineItems(report: UsageReport): LineItem[] {
 }
 
 export function InvoicePage() {
-  const { tenantId = "" } = useParams();
+  const { tenantKey = "" } = useParams();
   const [params] = useSearchParams();
   const month = params.get("month") ?? currentMonth();
 
@@ -75,22 +75,25 @@ export function InvoicePage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([getTenantUsage(tenantId, month), getTenant(tenantId)])
-      .then(([r, t]) => {
+    // Unvanda subdomain ola biler, usage endpoint-i ise UUID isteyir — ardicil gedirik:
+    // evvelce muessiseni hell et, sonra onun heqiqi id-si ile hesabati cek.
+    (async () => {
+      try {
+        const t = await getTenant(tenantKey);
         if (cancelled) return;
-        setReport(r);
         setTenant(t);
-      })
-      .catch(() => {
+        const r = await getTenantUsage(t.id, month);
+        if (!cancelled) setReport(r);
+      } catch {
         if (!cancelled) setError("Qaimə məlumatı yüklənmədi.");
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [tenantId, month]);
+  }, [tenantKey, month]);
 
   if (loading) return <Spinner />;
   if (error) return <Alert tone="err">{error}</Alert>;
@@ -122,7 +125,7 @@ export function InvoicePage() {
 
       <div className="no-print mb-6 flex items-center justify-between gap-4">
         <Link
-          to={`/tenants/${tenantId}`}
+          to={`/tenants/${tenantKey}`}
           className="inline-flex items-center gap-2 text-sm text-fg-muted transition-colors hover:text-fg"
         >
           <IconArrowLeft width={15} height={15} />

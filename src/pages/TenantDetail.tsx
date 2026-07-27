@@ -41,20 +41,23 @@ function CallsBarChart({ data }: { data: AnalyticsOverview["callsByDay"] }) {
 }
 
 export function TenantDetailPage() {
-  const { tenantId } = useParams<{ tenantId: string }>();
+  // Unvanda subdomain ola biler (/tenants/texnika) ve ya UUID — backend ikisini de tanіyіr.
+  const { tenantKey } = useParams<{ tenantKey: string }>();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantKey) return;
     let cancelled = false;
-    Promise.all([getTenant(tenantId), getTenantAnalytics(tenantId)])
-      .then(([t, a]) => {
-        if (!cancelled) {
-          setTenant(t);
-          setAnalytics(a);
-        }
+    // Evvelce muessiseni tap, sonra QALAN sorgulari onun HEQIQI id-si ile ver:
+    // analitika endpoint-i subdomain yox, UUID gozleyir.
+    getTenant(tenantKey)
+      .then(async (t) => {
+        if (cancelled) return;
+        setTenant(t);
+        const a = await getTenantAnalytics(t.id);
+        if (!cancelled) setAnalytics(a);
       })
       .catch(() => {
         if (!cancelled) setError("Biznes məlumatları yüklənə bilmədi.");
@@ -62,7 +65,7 @@ export function TenantDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [tenantId]);
+  }, [tenantKey]);
 
   if (error) return <p className="text-sm text-err">{error}</p>;
   if (!tenant || !analytics) return <Spinner />;

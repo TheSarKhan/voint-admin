@@ -137,7 +137,7 @@ export function BillingSection({
               options={months.map((m) => ({ value: m, label: formatMonth(m) }))}
               containerClassName="w-40"
             />
-            <Link to={`/tenants/${tenant.id}/invoice?month=${month}`}>
+            <Link to={`/tenants/${tenant.subdomain ?? tenant.id}/invoice?month=${month}`}>
               <Button variant="secondary" size="sm" icon={IconDocument}>
                 Qaimə
               </Button>

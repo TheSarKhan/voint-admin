@@ -181,7 +181,7 @@ export function TenantsPage() {
       key: "name",
       header: "Biznes",
       cell: (t) => (
-        <Link to={`/tenants/${t.id}`} className="font-medium text-fg hover:underline">
+        <Link to={`/tenants/${t.subdomain ?? t.id}`} className="font-medium text-fg hover:underline">
           {t.name}
         </Link>
       ),
