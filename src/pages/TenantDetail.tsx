@@ -4,6 +4,7 @@ import { getTenantAnalytics } from "../api/analytics";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
 import { BillingSection } from "../components/BillingSection";
+import { VapiStatus } from "../components/VapiStatus";
 import { IconArrowLeft } from "../components/icons";
 import { StatCard } from "../components/StatCard";
 import { Card, PageHeader, Spinner } from "../components/ui";
@@ -103,6 +104,8 @@ export function TenantDetailPage() {
         )}
       </Card>
 
+      <VapiStatus tenant={tenant} onSynced={setTenant} />
+
       <BillingSection tenant={tenant} onPlanSaved={setTenant} />
 
       <Card className="mt-6 p-6">
@@ -131,6 +134,23 @@ export function TenantDetailPage() {
               Dil konfiqurasiyası
             </dt>
             <dd className="mt-1.5 text-sm text-fg">{tenant.languageConfig || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+              Fəaliyyət sahəsi
+            </dt>
+            <dd className="mt-1.5 text-sm text-fg">{tenant.sttDomain || "—"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+              Nitq lüğəti
+            </dt>
+            <dd className="mt-1.5 text-sm text-fg">
+              {tenant.sttVocabulary || "—"}
+            </dd>
+            <p className="mt-1 text-xs text-fg-faint">
+              Bu sahəyə xas terminlər. Azərbaycan şəhər adları hamıya avtomatik əlavə olunur.
+            </p>
           </div>
         </dl>
         <p className="mt-5 border-t border-border pt-4 text-xs text-fg-faint">

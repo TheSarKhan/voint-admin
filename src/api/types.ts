@@ -32,6 +32,11 @@ export interface Tenant {
   overagePerMinute: number;
   /** Sert aylik tavan (deqiqe); 0 = limitsiz. Plandan ferqlidir — bu xerc muhafizesidir. */
   monthlyMinuteCap: number;
+  /** Vapi-deki assistant id; null = hele qurulmayib, zeng qebul etmir. */
+  vapiAssistantId: string | null;
+  sttDomain: string | null;
+  sttTopic: string | null;
+  sttVocabulary: string | null;
   createdAt: string; // ISO
 }
 
@@ -112,6 +117,9 @@ export interface TenantCreateInput {
   workingHours?: string;
   handoffNumber?: string;
   languageConfig?: string;
+  sttDomain?: string;
+  sttTopic?: string;
+  sttVocabulary?: string;
 }
 
 export interface AnalyticsOverview {
