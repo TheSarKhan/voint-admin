@@ -171,22 +171,20 @@ export function DataTable<T>({
 
       <TableContainer>
         <Table>
+          {/* THead oz <tr>-ini ozu qurur — buraya bir de <TR> qoysaq <tr><tr><th> alinir
+              ve brauzer onu yenidən duzəldərkən sutunlar bir-birine uygunlasmir. */}
           <THead>
-            <TR>
-              {columns.map((col) => (
-                <TH
-                  key={col.header}
-                  sortable={Boolean(col.key)}
-                  sortDir={
-                    col.key && state.sort === col.key ? state.direction : null
-                  }
-                  onSort={col.key ? () => toggleSort(col.key!) : undefined}
-                  className={col.align === "right" ? "text-right" : undefined}
-                >
-                  {col.header}
-                </TH>
-              ))}
-            </TR>
+            {columns.map((col) => (
+              <TH
+                key={col.header}
+                sortable={Boolean(col.key)}
+                sortDir={col.key && state.sort === col.key ? state.direction : null}
+                onSort={col.key ? () => toggleSort(col.key!) : undefined}
+                className={col.align === "right" ? "text-right" : undefined}
+              >
+                {col.header}
+              </TH>
+            ))}
           </THead>
           <TBody>
             {loading && !result ? (
@@ -210,7 +208,7 @@ export function DataTable<T>({
                       key={col.header}
                       className={[
                         col.align === "right" ? "text-right" : "",
-                        col.numeric ? "tabular-nums" : "",
+                        col.numeric ? "tabular-nums whitespace-nowrap" : "",
                         col.className ?? "",
                       ]
                         .filter(Boolean)

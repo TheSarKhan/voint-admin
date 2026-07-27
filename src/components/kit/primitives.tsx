@@ -484,7 +484,7 @@ export function TH({
             ? "descending"
             : "none"
       }
-      className={cx("px-5 py-3 font-medium", className)}
+      className={cx("whitespace-nowrap px-5 py-3 font-medium", className)}
       {...rest}
     >
       {sortable ? (

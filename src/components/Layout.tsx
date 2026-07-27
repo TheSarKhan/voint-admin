@@ -73,8 +73,11 @@ export function Layout() {
       </aside>
 
       {/* Content */}
+      {/* Tam en. Evvel mx-auto max-w-6xl idi: ekranin sagi bos qalirdi, cedveller ise
+          9 sutunla sixisib ufuqi surusurdu. Bu panel sened deyil, is ekranidir —
+          eni oxunaqliliq ucun daraltmaq burada eks netice verir. */}
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-8 py-8">
+        <div className="px-8 py-8">
           <Outlet />
         </div>
       </main>
