@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { AxiosError } from "axios";
 import { Link } from "react-router-dom";
 import { createTenant, listTenants } from "../api/tenants";
 import type { Tenant, TenantCreateInput } from "../api/types";
@@ -19,6 +20,7 @@ import { formatDate } from "../lib/format";
 
 const emptyForm: TenantCreateInput = {
   name: "",
+  subdomain: "",
   phoneNumber: "",
   greetingText: "",
   workingHours: "",
@@ -44,6 +46,7 @@ function CreateTenantModal({
     try {
       const tenant = await createTenant({
         name: form.name.trim(),
+        subdomain: form.subdomain?.trim() || undefined,
         phoneNumber: form.phoneNumber?.trim() || undefined,
         greetingText: form.greetingText?.trim() || undefined,
         workingHours: form.workingHours?.trim() || undefined,
@@ -52,8 +55,11 @@ function CreateTenantModal({
       });
       onCreated(tenant);
       onClose();
-    } catch {
-      setError("Biznes yaradıla bilmədi. Məlumatları yoxlayın.");
+    } catch (e) {
+      // Backend subdomain ucun konkret sebeb qaytarir ("bu unvan artiq istifade olunur",
+      // "yalniz kicik latin herfleri..."). Onu udmaq faydasizdir.
+      const err = e as AxiosError<{ detail?: string }>;
+      setError(err.response?.data?.detail ?? "Biznes yaradıla bilmədi. Məlumatları yoxlayın.");
     } finally {
       setSaving(false);
     }
@@ -70,6 +76,24 @@ function CreateTenantModal({
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
+        </Field>
+
+        <Field label="Panel ünvanı">
+          <div className="flex items-center gap-2">
+            <input
+              className={inputCls}
+              placeholder="ces"
+              value={form.subdomain}
+              onChange={(e) =>
+                setForm({ ...form, subdomain: e.target.value.toLowerCase() })
+              }
+            />
+            <span className="shrink-0 text-sm text-fg-muted">.voint.az</span>
+          </div>
+          <p className="mt-1 text-xs text-fg-faint">
+            Bu biznesin öz paneli bu ünvanda açılacaq. Kiçik hərf, rəqəm və defis.
+            Boş buraxsan panel ünvanı olmur.
+          </p>
         </Field>
 
         <Field label="Telefon nömrəsi">
@@ -188,6 +212,7 @@ export function TenantsPage() {
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-fg-muted">
                 <th className="px-5 py-3 font-medium">Biznes</th>
+                <th className="px-5 py-3 font-medium">Panel ünvanı</th>
                 <th className="px-5 py-3 font-medium">Telefon nömrəsi</th>
                 <th className="px-5 py-3 font-medium">Yaradılıb</th>
               </tr>
@@ -202,6 +227,13 @@ export function TenantsPage() {
                     <Link to={`/tenants/${t.id}`} className="font-medium text-fg hover:underline">
                       {t.name}
                     </Link>
+                  </td>
+                  <td className="px-5 py-3 text-fg-muted">
+                    {t.subdomain ? (
+                      <span className="font-mono text-xs">{t.subdomain}.voint.az</span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="px-5 py-3 text-fg-muted">{t.phoneNumber ?? "—"}</td>
                   <td className="px-5 py-3 text-fg-muted">{formatDate(t.createdAt)}</td>

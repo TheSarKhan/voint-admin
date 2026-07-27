@@ -21,6 +21,8 @@ export interface LoginResponse {
 export interface Tenant {
   id: string;
   name: string;
+  /** Panel unvani: "ces" -> ces.voint.az. null = bu muessisenin oz paneli yoxdur. */
+  subdomain: string | null;
   phoneNumber: string | null;
   greetingText: string | null;
   workingHours: string | null;
@@ -112,6 +114,7 @@ export interface BillingPlanInput {
 // qalan saheler serbestdir.
 export interface TenantCreateInput {
   name: string;
+  subdomain?: string;
   phoneNumber?: string;
   greetingText?: string;
   workingHours?: string;
