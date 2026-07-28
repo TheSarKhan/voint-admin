@@ -43,11 +43,14 @@ function errorText(e: unknown, fallback: string): string {
 }
 
 /**
- * Şifrə pəncərəsi.
+ * Şifrə pəncərəsi — iki fərqli nəticə üçün.
  *
- * Şifrə bazada hash olaraq saxlanılır — yəni bu pəncərə bağlandıqdan sonra onu heç kim,
- * o cümlədən biz, geri qaytara bilmirik. Ekran bunu açıq deməlidir, yoxsa operator
- * kopyalamadan bağlayır və yenidən sıfırlamalı olur.
+ * SMTP quruludursa şifrə serverdən ÜMUMİYYƏTLƏ qaytarılmır (`password: null`), çünki onu
+ * e-poçtla göndərdikdən sonra bir də ekrana çıxarmağın mənası yoxdur. O halda burada
+ * göstəriləsi şifrə yoxdur və pəncərə bunu deməlidir — boş bir sahə göstərmək yox.
+ *
+ * SMTP yoxdursa şifrə buradadır və yalnız bu bir dəfə: bazada hash saxlanılır, geri qaytarmaq
+ * mümkün deyil. Ekran bunu açıq deməlidir, yoxsa operator kopyalamadan bağlayır.
  */
 function PasswordDialog({
   result,
@@ -64,6 +67,27 @@ function PasswordDialog({
     );
     setCopied(true);
   };
+
+  if (result.emailed) {
+    return (
+      <Modal title="Şifrə göndərildi" onClose={onClose}>
+        <div className="space-y-4">
+          <p className="text-sm text-fg-muted">
+            Yeni şifrə <span className="text-fg">{result.user.email}</span> ünvanına
+            göndərildi. Təhlükəsizlik üçün burada göstərilmir.
+          </p>
+          <p className="text-sm text-fg-muted">
+            Gəlməyibsə spam qovluğuna baxsınlar. Ünvan səhvdirsə — əvvəlcə{" "}
+            <span className="text-fg">Redaktə</span> ilə düzəlt, sonra şifrəni yenidən
+            sıfırla; mesaj yeni ünvana gedəcək.
+          </p>
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Bağla</Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal title="Şifrə" onClose={onClose}>
