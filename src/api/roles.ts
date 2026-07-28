@@ -8,6 +8,9 @@ export interface PermissionCatalog {
 export interface RoleDetail {
   id: string;
   tenantId: string | null;
+  /** Departamentə aid deyilsə null — siyahıda "Departamentsiz" başlığı altında görünür. */
+  departmentId: string | null;
+  departmentName: string | null;
   name: string;
   description: string | null;
   template: boolean;
@@ -22,6 +25,7 @@ export interface RoleUpsert {
   name: string;
   description?: string;
   tenantId?: string | null;
+  departmentId?: string | null;
   template?: boolean;
   permissions: Record<string, string[]>;
 }
