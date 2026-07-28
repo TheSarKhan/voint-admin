@@ -5,6 +5,7 @@ import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
 import { BillingSection } from "../components/BillingSection";
 import { ConfigTab } from "../components/ConfigTab";
+import { RolesManager } from "../components/RolesManager";
 import { UsersTab } from "../components/UsersTab";
 import { VapiStatus } from "../components/VapiStatus";
 import { IconArrowLeft } from "../components/icons";
@@ -96,6 +97,7 @@ export function TenantDetailPage() {
         items={[
           { value: "umumi", label: "Ümumi" },
           { value: "istifadeciler", label: "İstifadəçilər" },
+          { value: "rollar", label: "Rollar" },
           { value: "hesablasma", label: "Hesablaşma" },
           { value: "konfiqurasiya", label: "Konfiqurasiya" },
         ]}
@@ -136,6 +138,8 @@ export function TenantDetailPage() {
       )}
 
       {tab === "istifadeciler" && <UsersTab tenantId={tenant.id} />}
+
+      {tab === "rollar" && <RolesManager key={tenant.id} tenantId={tenant.id} />}
 
       {tab === "hesablasma" && (
         <BillingSection tenant={tenant} onPlanSaved={setTenant} />
