@@ -290,6 +290,24 @@ function EditUserModal({
   );
 }
 
+/**
+ * Rol seçimləri.
+ *
+ * İstifadəçinin hazırkı rolu siyahıda yoxdursa, siyahı ONA UYĞUNLAŞDIRILIR — əks halda <select>
+ * boş və ya başqa bir rolla göstərilir, yəni ekran istifadəçini olmadığı bir rolda göstərir və
+ * bir təsadüfi klik onu həqiqətən dəyişir. Belə hal olmamalıdır, amma olsa görünsün.
+ */
+function roleOptions(user: PanelUser, roles: AssignableRole[]) {
+  const options = roles.map((r) => ({ value: r.id, label: r.name }));
+  if (user.roleId && !roles.some((r) => r.id === user.roleId)) {
+    options.unshift({
+      value: user.roleId,
+      label: `${user.roleName ?? "Naməlum rol"} (siyahıda yoxdur)`,
+    });
+  }
+  return options;
+}
+
 export function UsersTab({ tenantId }: { tenantId: string }) {
   const [users, setUsers] = useState<PanelUser[] | null>(null);
   const [roles, setRoles] = useState<AssignableRole[]>([]);
@@ -384,7 +402,7 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
                                 "Rol dəyişdirilmədi.",
                               )
                             }
-                            options={roles.map((r) => ({ value: r.id, label: r.name }))}
+                            options={roleOptions(u, roles)}
                             containerClassName="w-40"
                           />
                         ) : (
