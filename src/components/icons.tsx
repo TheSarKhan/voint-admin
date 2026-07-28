@@ -141,6 +141,14 @@ export const IconReceipt = (p: IconProps) => (
   </svg>
 );
 
+// Rollar / icazeler: qalxan + icinde isare.
+export const IconShield = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 8.5-4.1-.9-7-4.3-7-8.5V6z" />
+    <polyline points="9 11.5 11 13.5 15 9.5" />
+  </svg>
+);
+
 export const IconFolder = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

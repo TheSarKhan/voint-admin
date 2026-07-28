@@ -5,6 +5,7 @@ import {
   IconLogout,
   IconReceipt,
   IconSettings,
+  IconShield,
   IconUsers,
 } from "./icons";
 import { Wordmark } from "./Logo";
@@ -20,6 +21,7 @@ const navItems: NavItem[] = [
   { to: "/", label: "Bizneslər", icon: IconBuilding },
   { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
   { to: "/usage", label: "Hesablaşma", icon: IconReceipt },
+  { to: "/roles", label: "Rollar", icon: IconShield },
   { to: "/settings", label: "Ayarlar", icon: IconSettings },
 ];
 
