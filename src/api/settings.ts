@@ -36,3 +36,8 @@ export async function recheckProviders(): Promise<ProviderHealth[]> {
   const { data } = await http.post<ProviderHealth[]>("/admin/settings/recheck");
   return data;
 }
+
+/** SMTP-nin doğrudan işlədiyini yoxlayır — ayarları saxlamaq bunu sübut etmir. */
+export async function sendTestEmail(to: string): Promise<void> {
+  await http.post("/admin/settings/test-email", { to });
+}

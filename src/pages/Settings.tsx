@@ -1,6 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
-import { clearSetting, listSettings, recheckProviders, saveSetting } from "../api/settings";
+import {
+  clearSetting,
+  listSettings,
+  recheckProviders,
+  saveSetting,
+  sendTestEmail,
+} from "../api/settings";
 import type { ProviderHealth, SettingView } from "../api/types";
 import { listProviderHealth } from "../api/usage";
 import {
@@ -217,6 +223,8 @@ export function SettingsPage() {
         </CardBody>
       </Card>
 
+      <TestEmailCard />
+
       <Card>
         <CardHeader
           title="Açarlar"
@@ -229,5 +237,60 @@ export function SettingsPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+/**
+ * SMTP-ni sinaqdan kecirir.
+ *
+ * Bes sahəni yadda saxlamaq onların işlədiyini SÜBUT ETMİR — server məlumatları rədd edə,
+ * göndərən ünvan doğrulanmamış ola, port bağlı ola bilər. Bunu ilk öyrənən adam girişini
+ * gözləyən yeni müştəri olmamalıdır.
+ */
+function TestEmailCard() {
+  const [to, setTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const send = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      await sendTestEmail(to.trim());
+      setResult({ ok: true, text: `Göndərildi: ${to.trim()}. Gəlmədisə spam qovluğuna bax.` });
+    } catch (e) {
+      setResult({ ok: false, text: errorMessage(e) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader
+        title="E-poçt sınağı"
+        description="SMTP ayarlarını yazdıqdan sonra buradan bir test mesajı göndər."
+      />
+      <CardBody>
+        <div className="flex flex-wrap items-end gap-2">
+          <Input
+            type="email"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="ozune@example.com"
+            containerClassName="min-w-[16rem] flex-1"
+            aria-label="Test ünvanı"
+          />
+          <Button loading={busy} disabled={!to.includes("@")} onClick={send}>
+            Göndər
+          </Button>
+        </div>
+        {result && (
+          <p className={`mt-3 text-sm ${result.ok ? "text-fg-muted" : "text-err"}`}>
+            {result.text}
+          </p>
+        )}
+      </CardBody>
+    </Card>
   );
 }

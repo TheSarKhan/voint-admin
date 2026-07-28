@@ -12,10 +12,14 @@ export interface PanelUser {
   createdAt: string;
 }
 
-/** Şifrə yalnız BURADA gəlir — bazada hash saxlanılır, geri qaytarmaq mümkün deyil. */
+/**
+ * E-poçt göndərilibsə `password` NULL gəlir — göstəriləcək bir şey yoxdur.
+ * Göndərilməyibsə şifrə buradadır və yalnız bir dəfə: bazada hash saxlanılır.
+ */
 export interface PanelUserCreated {
   user: PanelUser;
-  password: string;
+  password: string | null;
+  emailed: boolean;
 }
 
 export interface AssignableRole {
