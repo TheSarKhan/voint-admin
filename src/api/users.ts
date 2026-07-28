@@ -48,6 +48,22 @@ export async function createUser(
   return data;
 }
 
+/**
+ * E-poçt eyni zamanda giriş adıdır — dəyişdirilsə, istifadəçinin açıq sessiyası dayanır və
+ * yeni ünvanla girməli olur. Rol, vəziyyət və şifrə toxunulmaz qalır.
+ */
+export async function updateUser(
+  tenantId: string,
+  userId: string,
+  input: { email: string; fullName?: string },
+): Promise<PanelUser> {
+  const { data } = await http.put<PanelUser>(
+    `/tenants/${tenantId}/users/${userId}`,
+    input,
+  );
+  return data;
+}
+
 export async function resetPassword(
   tenantId: string,
   userId: string,

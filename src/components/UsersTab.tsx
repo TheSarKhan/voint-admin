@@ -8,11 +8,12 @@ import {
   listUsers,
   resetPassword,
   setUserStatus,
+  updateUser,
   type AssignableRole,
   type PanelUser,
   type PanelUserCreated,
 } from "../api/users";
-import { IconCopy, IconPlus, IconRefresh, IconTrash } from "./icons";
+import { IconCopy, IconEdit, IconPlus, IconRefresh, IconTrash } from "./icons";
 import {
   Alert,
   Button,
@@ -177,12 +178,101 @@ function CreateUserModal({
   );
 }
 
+/**
+ * İstifadəçi məlumatlarının redaktəsi.
+ *
+ * Yalnız ad və e-poçt: rol, vəziyyət və şifrə ayrı düymələrdədir, çünki hər birinin başqa
+ * nəticəsi var. E-poçt dəyişəndə xəbərdarlıq göstərilir — o, sadəcə bir sahə deyil, giriş adının
+ * özüdür, və dəyişdikdə istifadəçinin açıq sessiyası dayanır.
+ */
+function EditUserModal({
+  tenantId,
+  user,
+  onClose,
+  onSaved,
+}: {
+  tenantId: string;
+  user: PanelUser;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [email, setEmail] = useState(user.email);
+  const [fullName, setFullName] = useState(user.fullName ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const emailChanged = email.trim().toLowerCase() !== user.email.toLowerCase();
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await updateUser(tenantId, user.id, {
+        email: email.trim(),
+        fullName: fullName.trim() || undefined,
+      });
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError(errorText(e, "Yadda saxlanmadı."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal title="İstifadəçini redaktə et" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="E-poçt">
+          <input
+            required
+            type="email"
+            autoComplete="off"
+            className={inputCls}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Ad Soyad">
+          <input
+            className={inputCls}
+            placeholder="Aygün Məmmədova"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+        </Field>
+
+        {emailChanged && (
+          <Alert tone="warn" title="Giriş ünvanı dəyişir">
+            İstifadəçi bundan sonra <span className="text-fg">{email.trim()}</span> ilə girəcək.
+            Açıq sessiyası dayanacaq. Şifrə dəyişmir.
+          </Alert>
+        )}
+
+        {error && <p className="text-sm text-err">{error}</p>}
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" onClick={onClose}>
+            Ləğv et
+          </Button>
+          <Button type="submit" loading={saving} disabled={!email.trim()}>
+            Yadda saxla
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 export function UsersTab({ tenantId }: { tenantId: string }) {
   const [users, setUsers] = useState<PanelUser[] | null>(null);
   const [roles, setRoles] = useState<AssignableRole[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [passwordResult, setPasswordResult] = useState<PanelUserCreated | null>(null);
+  const [editing, setEditing] = useState<PanelUser | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const reload = () =>
@@ -290,6 +380,14 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
                           <Button
                             variant="ghost"
                             size="sm"
+                            icon={IconEdit}
+                            onClick={() => setEditing(u)}
+                          >
+                            Redaktə
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             icon={IconRefresh}
                             loading={busyId === u.id}
                             onClick={() =>
@@ -355,6 +453,15 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
             setPasswordResult(r);
             reload();
           }}
+        />
+      )}
+
+      {editing && (
+        <EditUserModal
+          tenantId={tenantId}
+          user={editing}
+          onClose={() => setEditing(null)}
+          onSaved={reload}
         />
       )}
 
