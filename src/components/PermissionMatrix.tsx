@@ -1,6 +1,47 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { PermissionCatalog } from "../api/roles";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "./ui";
+
+/**
+ * Modulun bütün icazələrini birdən verən xana.
+ *
+ * "Yarımçıq" vəziyyəti HTML-də yalnız JS ilə qoyulur, ona görə ref lazımdır. Onsuz iki fərqli
+ * hal — "heç biri seçilməyib" və "bir neçəsi seçilib" — eyni boş xana kimi görünür, yəni ekran
+ * verilmiş icazəni gizlədir.
+ */
+function ModuleCheckbox({
+  granted,
+  total,
+  disabled,
+  label,
+  onToggle,
+}: {
+  granted: number;
+  total: number;
+  disabled: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.indeterminate = granted > 0 && granted < total;
+    }
+  }, [granted, total]);
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      aria-label={`${label} — bütün icazələr`}
+      checked={granted === total && total > 0}
+      disabled={disabled}
+      onChange={onToggle}
+      className="h-4 w-4 shrink-0 cursor-pointer accent-accent disabled:cursor-not-allowed"
+    />
+  );
+}
 
 /**
  * Rol × resurs × əməliyyat matrisi.
@@ -68,7 +109,6 @@ export function PermissionMatrix({
               {a.label}
             </TH>
           ))}
-          <TH className="text-right">Hamısı</TH>
         </THead>
         <TBody>
           {resources.map((r) => {
@@ -76,10 +116,21 @@ export function PermissionMatrix({
             return (
               <TR key={r.value}>
                 <TD className="sticky left-0 z-10 whitespace-nowrap bg-surface font-medium text-fg">
-                  {r.label}
-                  {r.platformOnly && (
-                    <span className="ml-2 text-xs text-fg-faint">platforma</span>
-                  )}
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <ModuleCheckbox
+                      granted={granted.length}
+                      total={catalog.actions.length}
+                      disabled={disabled}
+                      label={r.label}
+                      onToggle={() => rowAll(r.value)}
+                    />
+                    <span>
+                      {r.label}
+                      {r.platformOnly && (
+                        <span className="ml-2 text-xs text-fg-faint">platforma</span>
+                      )}
+                    </span>
+                  </label>
                 </TD>
                 {catalog.actions.map((a) => (
                   <TD key={a.value} className="text-center">

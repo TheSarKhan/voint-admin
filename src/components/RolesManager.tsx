@@ -209,27 +209,70 @@ export function RolesManager({ tenantId }: { tenantId?: string }) {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {groups.map((g) => {
                 const userCount = g.roles.reduce((n, r) => n + r.userCount, 0);
+                const enter = () => {
+                  setOpenId(g.id);
+                  setExpandedRole(null);
+                };
                 return (
-                  <button
+                  // Duyme yox, div: icinde ayri duymeler var, duyme icinde duyme olmaz.
+                  // Klaviatura ucun role/tabIndex ve Enter/Space ozumuz veririk.
+                  <div
                     key={g.id || "ungrouped"}
-                    type="button"
-                    onClick={() => {
-                      setOpenId(g.id);
-                      setExpandedRole(null);
+                    role="button"
+                    tabIndex={0}
+                    onClick={enter}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        enter();
+                      }
                     }}
-                    className="rounded-lg border border-border bg-surface p-5 text-left transition-colors hover:border-border-strong hover:bg-surface-2/60"
+                    className="cursor-pointer rounded-lg border border-border bg-surface p-5 text-left transition-colors hover:border-border-strong hover:bg-surface-2/60 focus:outline-none focus-visible:border-border-strong focus-visible:ring-1 focus-visible:ring-border-strong"
                   >
-                    <span className="flex items-baseline justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
                       <span className="text-sm font-medium text-fg">{g.name}</span>
-                      <IconChevronRight width={14} height={14} className="shrink-0 text-fg-faint" />
-                    </span>
+                      {g.real ? (
+                        <div className="-mt-1 -mr-1 flex shrink-0 gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={IconEdit}
+                            iconOnly
+                            aria-label="Adı dəyiş"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDepartmentForm(
+                                departments.find((d) => d.id === g.id) ?? "new",
+                              );
+                            }}
+                          />
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={IconTrash}
+                            iconOnly
+                            aria-label="Sil"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeDepartment(g);
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <IconChevronRight
+                          width={14}
+                          height={14}
+                          className="mt-1 shrink-0 text-fg-faint"
+                        />
+                      )}
+                    </div>
                     {g.description && (
-                      <span className="mt-1.5 block text-xs text-fg-muted">{g.description}</span>
+                      <p className="mt-1.5 text-xs text-fg-muted">{g.description}</p>
                     )}
-                    <span className="mt-4 block text-xs text-fg-faint">
+                    <p className="mt-4 text-xs text-fg-faint">
                       {g.roles.length} rol · {userCount} istifadəçi
-                    </span>
-                  </button>
+                    </p>
+                  </div>
                 );
               })}
             </div>
@@ -253,36 +296,12 @@ export function RolesManager({ tenantId }: { tenantId?: string }) {
             <CardHeader
               title={open.name}
               description={open.description ?? undefined}
+              // Departamentin adini deyismek ve silmek kartdadir - burada yalniz onun icindeki
+              // isler var, ki qovlugun ozunu silmek qovlugun icinde tesadufen basilmasin.
               actions={
-                <div className="flex flex-wrap gap-2">
-                  {open.real && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={IconEdit}
-                        onClick={() =>
-                          setDepartmentForm(
-                            departments.find((d) => d.id === open.id) ?? "new",
-                          )
-                        }
-                      >
-                        Adı dəyiş
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        icon={IconTrash}
-                        onClick={() => removeDepartment(open)}
-                      >
-                        Sil
-                      </Button>
-                    </>
-                  )}
-                  <Button size="sm" icon={IconPlus} onClick={() => setRoleForm("new")}>
-                    Yeni rol
-                  </Button>
-                </div>
+                <Button size="sm" icon={IconPlus} onClick={() => setRoleForm("new")}>
+                  Yeni rol
+                </Button>
               }
             />
             <CardBody className="p-0">
