@@ -612,33 +612,39 @@ function RoleFormModal({
   };
 
   return (
-    <Modal title={role ? role.name : "Yeni rol"} onClose={onClose}>
+    // Genis: icaze matrisi 4 emeliyyat + "hamisi" sutunu ile dar pencereye sigmir, sigdirmaga
+    // calisanda resurs adlari kesilir - yeni operator hansi setri isaretlediyini gormur.
+    <Modal size="xl" title={role ? role.name : "Yeni rol"} onClose={onClose}>
       <div className="space-y-4">
-        <Field label="Ad">
-          <input
-            className={inputCls}
-            placeholder="Dəstək əməkdaşı"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+        {/* Genis pencerede tek sutunda uzanan bos sahələr — hər biri ekranın yarısı qədər
+            uzunluqda ad xanası — oxunmur; ona görə üçü bir sırada. */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Ad">
+            <input
+              className={inputCls}
+              placeholder="Dəstək əməkdaşı"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </Field>
+          <Field label="Təsvir">
+            <input
+              className={inputCls}
+              placeholder="Nə edə bilir"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Field>
+          <Select
+            label="Departament"
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            options={[
+              { value: "", label: "— seçilməyib —" },
+              ...departments.map((d) => ({ value: d.id, label: d.name })),
+            ]}
           />
-        </Field>
-        <Field label="Təsvir">
-          <input
-            className={inputCls}
-            placeholder="Nə edə bilir"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </Field>
-        <Select
-          label="Departament"
-          value={departmentId}
-          onChange={(e) => setDepartmentId(e.target.value)}
-          options={[
-            { value: "", label: "— seçilməyib —" },
-            ...departments.map((d) => ({ value: d.id, label: d.name })),
-          ]}
-        />
+        </div>
 
         {!scoped && (
           <label className="flex items-center gap-2 text-sm text-fg">

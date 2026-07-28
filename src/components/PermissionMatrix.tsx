@@ -54,10 +54,15 @@ export function PermissionMatrix({
   };
 
   return (
-    <TableContainer>
-      <Table>
+    // Oz qeyri-seffaf fonu var: yapisqan resurs sutunu altindan surusen xanalari ortmelidir,
+    // bunun ucun de fonun arxadaki setirle eyni olmasi lazimdir - hem pencerede, hem cedvel icinde.
+    <div className="rounded-md border border-border bg-surface">
+      <TableContainer>
+        <Table>
         <THead>
-          <TH>Resurs</TH>
+          {/* Resurs sutunu yerinde qalir: dar ekranda cedvel yana surusende ilk itecek sey
+              sətrin nəyə aid olduğudur, ve o gedende qalan xanalar mənasını itirir. */}
+          <TH className="sticky left-0 z-10 bg-surface">Resurs</TH>
           {catalog.actions.map((a) => (
             <TH key={a.value} className="text-center">
               {a.label}
@@ -70,7 +75,7 @@ export function PermissionMatrix({
             const granted = value[r.value] ?? [];
             return (
               <TR key={r.value}>
-                <TD className="whitespace-nowrap font-medium text-fg">
+                <TD className="sticky left-0 z-10 whitespace-nowrap bg-surface font-medium text-fg">
                   {r.label}
                   {r.platformOnly && (
                     <span className="ml-2 text-xs text-fg-faint">platforma</span>
@@ -101,8 +106,9 @@ export function PermissionMatrix({
               </TR>
             );
           })}
-        </TBody>
-      </Table>
-    </TableContainer>
+          </TBody>
+        </Table>
+      </TableContainer>
+    </div>
   );
 }

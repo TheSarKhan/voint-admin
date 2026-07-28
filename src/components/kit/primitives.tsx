@@ -842,7 +842,8 @@ export function Modal({
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  /** "xl" genis cedvel ucun — icaze matrisi kimi yana dogru surusdurulmemeli mezmun. */
+  size?: "sm" | "md" | "lg" | "xl";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -894,7 +895,13 @@ export function Modal({
   }, [onClose, trapFocus]);
 
   const maxW =
-    size === "sm" ? "max-w-sm" : size === "lg" ? "max-w-2xl" : "max-w-lg";
+    size === "sm"
+      ? "max-w-sm"
+      : size === "lg"
+        ? "max-w-2xl"
+        : size === "xl"
+          ? "max-w-5xl"
+          : "max-w-lg";
 
   return (
     <div
