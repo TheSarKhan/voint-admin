@@ -4,6 +4,7 @@ import { getTenantAnalytics } from "../api/analytics";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
 import { BillingSection } from "../components/BillingSection";
+import { ConfigTab } from "../components/ConfigTab";
 import { UsersTab } from "../components/UsersTab";
 import { VapiStatus } from "../components/VapiStatus";
 import { IconArrowLeft } from "../components/icons";
@@ -11,7 +12,6 @@ import { StatCard } from "../components/StatCard";
 import { Card, PageHeader, Spinner, Tabs } from "../components/ui";
 import {
   formatDate,
-  formatDateTime,
   formatDayShort,
   formatDuration,
   formatPercent,
@@ -142,53 +142,8 @@ export function TenantDetailPage() {
       )}
 
       {tab === "konfiqurasiya" && (
-        <Card className="p-6">
-          <h2 className="mb-5 text-sm font-medium text-fg">Konfiqurasiya</h2>
-          <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                Salamlama mətni
-              </dt>
-              <dd className="mt-1.5 text-sm text-fg">{tenant.greetingText || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                İş saatları
-              </dt>
-              <dd className="mt-1.5 text-sm text-fg">{tenant.workingHours || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                Operatora yönləndirmə nömrəsi
-              </dt>
-              <dd className="mt-1.5 text-sm text-fg">{tenant.handoffNumber || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                Dil konfiqurasiyası
-              </dt>
-              <dd className="mt-1.5 text-sm text-fg">{tenant.languageConfig || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                Fəaliyyət sahəsi
-              </dt>
-              <dd className="mt-1.5 text-sm text-fg">{tenant.sttDomain || "—"}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                Nitq lüğəti
-              </dt>
-              <dd className="mt-1.5 text-sm text-fg">{tenant.sttVocabulary || "—"}</dd>
-              <p className="mt-1 text-xs text-fg-faint">
-                Bu sahəyə xas terminlər. Azərbaycan şəhər adları hamıya avtomatik əlavə olunur.
-              </p>
-            </div>
-          </dl>
-          <p className="mt-5 border-t border-border pt-4 text-xs text-fg-faint">
-            Yaradılıb: {formatDateTime(tenant.createdAt)} · Redaktə ekranı növbəti mərhələdə.
-          </p>
-        </Card>
+        // key: bir muessiseden digerine kecende forma kohne deyerlerle qalmasin.
+        <ConfigTab key={tenant.id} tenant={tenant} onSaved={setTenant} />
       )}
     </div>
   );

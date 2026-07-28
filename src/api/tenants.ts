@@ -28,6 +28,28 @@ export async function createTenant(input: TenantCreateInput): Promise<Tenant> {
  * Backend butun 22 ayari ozu qurur — en vacibi metadata.tenant_id, o olmasa
  * bu biznesin zengleri baska biznesin bilik bazasindan cavablanir.
  */
+/**
+ * Konfiqurasiyanı yeniləyir. Göndərilməyən sahələr toxunulmaz qalır.
+ *
+ * Backend yadda saxladıqdan sonra assistant-ı Vapi-də də yeniləyir — salamlama və nitq lüğəti
+ * orada da yaşayır, ona görə yalnız bazanı dəyişmək paneli zəng edənin eşitdiyi ilə uyğunsuz edərdi.
+ */
+export async function updateTenantConfig(
+  tenantId: string,
+  input: {
+    greetingText?: string | null;
+    workingHours?: string | null;
+    handoffNumber?: string | null;
+    languageConfig?: string | null;
+    sttDomain?: string | null;
+    sttTopic?: string | null;
+    sttVocabulary?: string | null;
+  },
+): Promise<Tenant> {
+  const { data } = await http.put<Tenant>(`/tenants/${tenantId}/config`, input);
+  return data;
+}
+
 export async function syncTenantVapi(tenantId: string): Promise<Tenant> {
   const { data } = await http.post<Tenant>(`/tenants/${tenantId}/vapi-sync`);
   return data;
