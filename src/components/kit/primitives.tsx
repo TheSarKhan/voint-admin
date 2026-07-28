@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type ComponentPropsWithoutRef,
   type ComponentType,
   type ReactNode,
   type SVGProps,
@@ -520,16 +521,15 @@ export function TBody({ children }: { children: ReactNode }) {
 export function TR({
   children,
   className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+  ...rest
+}: ComponentPropsWithoutRef<"tr">) {
   return (
     <tr
       className={cx(
         "border-b border-border/60 last:border-0 hover:bg-surface-2/60",
         className,
       )}
+      {...rest}
     >
       {children}
     </tr>

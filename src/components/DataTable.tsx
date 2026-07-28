@@ -69,6 +69,7 @@ export function DataTable<T>({
   toolbar,
   /** Deyisdikde cedvel birinci sehifeden yeniden yuklenir (mes. ay secicisi). */
   resetKey,
+  onRowClick,
 }: {
   columns: Column<T>[];
   fetchPage: (state: QueryState) => Promise<PageResult<T>>;
@@ -80,6 +81,12 @@ export function DataTable<T>({
   emptyMessage?: string;
   toolbar?: ReactNode;
   resetKey?: string | number;
+  /**
+   * Setire klikledikde cagirilir. Sutunun icindeki linki EVEZ ETMIR, ustune gelir: link
+   * klaviatura ile gezmeye, orta duyme ile yeni tabda acmaga ve unvani kopyalamaga imkan verir —
+   * bunlarin hec biri klik hadisesi ile alinmir.
+   */
+  onRowClick?: (row: T) => void;
 }) {
   const [rawQuery, setRawQuery] = useState("");
   const [state, setState] = useState<QueryState>({
@@ -202,7 +209,25 @@ export function DataTable<T>({
               />
             ) : (
               result!.content.map((row) => (
-                <TR key={rowKey(row)}>
+                <TR
+                  key={rowKey(row)}
+                  className={onRowClick ? "cursor-pointer" : undefined}
+                  onClick={
+                    onRowClick
+                      ? (e) => {
+                          // Setirin icindeki link/duyme oz isini gorsun - iki defe islemesin.
+                          if ((e.target as HTMLElement).closest("a,button,input,select,label")) {
+                            return;
+                          }
+                          // Metn secmek ucun suruşdurəndə sehife deyismemelidir.
+                          if (window.getSelection()?.toString()) {
+                            return;
+                          }
+                          onRowClick(row);
+                        }
+                      : undefined
+                  }
+                >
                   {columns.map((col) => (
                     <TD
                       key={col.header}

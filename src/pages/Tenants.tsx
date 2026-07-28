@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createTenant, listTenants } from "../api/tenants";
 import { getPublicConfig } from "../api/publicConfig";
 import type { Tenant, TenantCreateInput } from "../api/types";
@@ -167,6 +167,7 @@ function CreateTenantModal({
 }
 
 export function TenantsPage() {
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [domain, setDomain] = useState("");
   // Yeni biznes yaradilanda cedvele "yeniden yukle" siqnali.
@@ -258,6 +259,7 @@ export function TenantsPage() {
         searchPlaceholder="Ad, ünvan və ya nömrə…"
         emptyMessage="Hələ heç bir biznes yoxdur."
         resetKey={reload}
+        onRowClick={(t) => navigate(`/tenants/${t.subdomain ?? t.id}`)}
         fetchPage={(state) =>
           listTenants({
             q: state.q || undefined,
