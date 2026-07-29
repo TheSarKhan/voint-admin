@@ -10,6 +10,12 @@ export const http = axios.create({
 
 // JWT-ni her sorguya elave et
 http.interceptors.request.use((config) => {
+  // Sorgu oz tokenini getiribse ona toxunmuruq: giris aninda store-da hele KOHNE token
+  // oturur (sessiya /auth/me ugurla cavab verenden sonra yazilir), ve onu ustelemek
+  // girisi olu tokenle gonderir - 401, ustelik "melumatlari yoxlayin" mesaji ile.
+  if (config.headers.Authorization) {
+    return config;
+  }
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -61,7 +67,10 @@ http.interceptors.response.use(
     }
 
     // /auth/* ozu 401 verirse yenilemeye cehd etmek menasizdir — dovreye dusme riski var.
-    const isAuthCall = original?.url?.includes("/auth/");
+    // Yalniz giris ve yenileme: /auth/me da bura dusurdu, halbuki tokenin vaxtinin
+    // bitdiyini bildiren ESAS sorgu odur - yenilenmek evezine sessiya baglanirdi.
+    const isAuthCall =
+      original?.url?.includes("/auth/login") || original?.url?.includes("/auth/refresh");
 
     if (original && !original._retried && !isAuthCall) {
       original._retried = true;
