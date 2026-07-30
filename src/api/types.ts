@@ -149,6 +149,45 @@ export interface AnalyticsOverview {
   callsByDay: { date: string; count: number }[];
 }
 
+// Backend (com.starsoft.voint.call.CallStatus). ONGOING = zeng hele bitmeyib,
+// RESOLVED = agent ozu hell edib, HANDOFF = insana oturulub.
+export type CallStatus = "ONGOING" | "RESOLVED" | "HANDOFF";
+
+export interface CallSummary {
+  id: string;
+  callerNumber: string;
+  /** Backend hazirda hemise "az" qaytarir (detectLanguage() sabitdir). */
+  languageDetected: string | null;
+  startedAt: string; // ISO
+  endedAt: string | null;
+  durationSec: number;
+  status: CallStatus;
+}
+
+// GET /calls/{callId} call_transcripts cedvelinden transkript + AI xulaseni elave edir.
+// Hazirki webhook axini her zeng ucun transkript yazmir — buna gore her iki sahe
+// null ola biler ve ekran bunu "hele yoxdur" kimi izah etmelidir, bos qutu kimi yox.
+export interface CallDetail extends CallSummary {
+  aiSummary: string | null;
+  fullTranscript: string | null;
+}
+
+/** Muessisenin bilik bazasi — agent cavablari buradan RAG ile qurur. */
+export interface RagDocument {
+  id: string;
+  tenantId: string;
+  content: string;
+  category: string | null;
+  source: string | null;
+  createdAt: string; // ISO
+}
+
+export interface RagDocumentInput {
+  content: string;
+  category?: string;
+  source?: string;
+}
+
 /** Landing sehifesindeki pilot formundan gelen sorgu. Hele musteri deyil. */
 export type LeadStatus = "NEW" | "CONTACTED" | "CONVERTED" | "REJECTED";
 

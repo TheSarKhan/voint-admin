@@ -4,7 +4,9 @@ import { getTenantAnalytics } from "../api/analytics";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
 import { BillingSection } from "../components/BillingSection";
+import { CallsTab } from "../components/CallsTab";
 import { ConfigTab } from "../components/ConfigTab";
+import { RagTab } from "../components/RagTab";
 import { RolesManager } from "../components/RolesManager";
 import { UsersTab } from "../components/UsersTab";
 import { VapiStatus } from "../components/VapiStatus";
@@ -96,6 +98,8 @@ export function TenantDetailPage() {
         onChange={setTab}
         items={[
           { value: "umumi", label: "Ümumi" },
+          { value: "zengler", label: "Zənglər" },
+          { value: "bilik-bazasi", label: "Bilik bazası" },
           { value: "istifadeciler", label: "İstifadəçilər" },
           { value: "rollar", label: "Rollar" },
           { value: "hesablasma", label: "Hesablaşma" },
@@ -136,6 +140,11 @@ export function TenantDetailPage() {
           <VapiStatus tenant={tenant} onSynced={setTenant} />
         </>
       )}
+
+      {/* key: bir müəssisədən digərinə keçəndə köhnə siyahı bir an görünməsin. */}
+      {tab === "zengler" && <CallsTab key={tenant.id} tenantId={tenant.id} />}
+
+      {tab === "bilik-bazasi" && <RagTab key={tenant.id} tenantId={tenant.id} />}
 
       {tab === "istifadeciler" && <UsersTab tenantId={tenant.id} />}
 
