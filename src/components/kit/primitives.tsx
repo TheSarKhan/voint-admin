@@ -279,7 +279,8 @@ export function Spinner({
   return (
     <div
       className={cx(
-        "flex items-center justify-center",
+        // justify-center yox: yuklenme gostericisi de soldan baslayir.
+        "flex items-center",
         compact ? "py-6" : "py-16",
       )}
       role="status"
@@ -348,7 +349,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+    // Soldan baslayir, mərkəzlənmir — panel boyu butun ekranlar kimi. Mesaj paraqrafinda
+    // en limiti qalir: bir cumleni 2000px-e dartmaq oxunmaz edir, amma o da soldan baslayir.
+    <div className="flex flex-col items-start px-6 py-16 text-left">
       {Icon && (
         <Icon width={28} height={28} className="mb-3 text-fg-faint" />
       )}
