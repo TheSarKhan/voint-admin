@@ -55,8 +55,12 @@ export function monthEndDate(ym: string): string {
 
 export function formatDuration(sec: number): string {
   if (!sec) return "—";
-  const m = Math.floor(sec / 60);
-  const s = Math.round(sec % 60);
+  // ƏVVƏLCƏ tam saniyəyə yuvarlaqlaşdır, SONRA böl. Əks halda 59.6 saniyə "0:60" verir:
+  // dəqiqə 0-a yuvarlaqlaşır, saniyə isə ayrıca 60-a. Backend orta müddəti onluq kəsrlə
+  // qaytardığı üçün bu hal real məlumatda yaranır.
+  const total = Math.round(sec);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 

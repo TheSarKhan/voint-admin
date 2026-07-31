@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { getCalls } from "../api/calls";
@@ -27,6 +27,7 @@ import {
   type StatusTone,
 } from "./ui";
 import { formatDateTime, formatDuration } from "../lib/format";
+import { useFitRows } from "../lib/useFitRows";
 
 function errorText(e: unknown, fallback: string): string {
   const err = e as AxiosError<{ detail?: string }>;
@@ -47,7 +48,13 @@ const STATUS_TONE: Record<CallStatus, StatusTone> = {
   HANDOFF: "warn",
 };
 
-const PAGE_SIZE = 20;
+/** "auto" = ekrana sığan qədər. Qalanlarını istifadəçi seçir; onda scroll gözləniləndir. */
+const SIZE_OPTIONS = [
+  { value: "auto", label: "Ekrana sığan qədər" },
+  { value: "25", label: "25 sətir" },
+  { value: "50", label: "50 sətir" },
+  { value: "100", label: "100 sətir" },
+];
 
 export function CallsTab({
   tenantId,
@@ -64,6 +71,8 @@ export function CallsTab({
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"ALL" | CallStatus>("ALL");
   const [page, setPage] = useState(1);
+  const [sizeChoice, setSizeChoice] = useState("auto");
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
 
   const load = async (silent = false) => {
     if (silent) setRefreshing(true);
@@ -104,12 +113,16 @@ export function CallsTab({
     });
   }, [calls, q, status]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const fitRows = useFitRows(bodyRef, !!calls && calls.length > 0);
+  // Ölçü hazır olana qədər 10 sətir: bir kadr boş cədvəldənsə az sətir daha az gözə çarpır.
+  const pageSize = sizeChoice === "auto" ? (fitRows ?? 10) : Number(sizeChoice);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   // Süzgəc dəyişəndə nəticə kiçilir; köhnə səhifə nömrəsində qalmaq boş cədvəl göstərir.
   const safePage = Math.min(page, pageCount);
   const visible = useMemo(
-    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
-    [filtered, safePage],
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, safePage, pageSize],
   );
 
   if (error && !calls) return <Alert tone="err">{error}</Alert>;
@@ -182,7 +195,7 @@ export function CallsTab({
                 <TH>Dil</TH>
               </TR>
             </THead>
-            <TBody>
+            <TBody ref={bodyRef}>
               {filtered.length === 0 ? (
                 <TableEmpty colSpan={6} message="Süzgəcə uyğun zəng tapılmadı." />
               ) : (
@@ -221,13 +234,25 @@ export function CallsTab({
 
       {/* Backend GET /calls düz siyahı qaytarır — bütün zənglər onsuz da yüklənib,
           burada yalnız göstərilən hissə kəsilir. Pagination öz üst xəttini özü çəkir. */}
+      {/* Bu paneldəki Pagination çılpaq idarəetmədir (öz xətti/doldurması yoxdur — DataTable
+          onu öz altlığının içində işlədir), ona görə zolağı burada özümüz çəkirik. */}
       {calls.length > 0 && (
-        <Pagination
-          page={safePage}
-          pageCount={pageCount}
-          onChange={setPage}
-          totalLabel={`${filtered.length} zəng`}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+          <Select
+            containerClassName="w-48"
+            aria-label="Səhifədəki sətir sayı"
+            value={sizeChoice}
+            onChange={(e) => {
+              setSizeChoice(e.target.value);
+              setPage(1);
+            }}
+            options={SIZE_OPTIONS}
+          />
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-fg-faint">{filtered.length} zəng</span>
+            <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+          </div>
+        </div>
       )}
 
     </Card>
