@@ -1,5 +1,5 @@
 import { http } from "./client";
-import type { CallDetail, CallSummary } from "./types";
+import type { CallDetail, CallSummary, UnansweredQuestion } from "./types";
 
 // Backend (com.starsoft.voint.call.dto.CallResponse) sahe adlari panelin daxili
 // tiplerinden ferqlidir (durationSeconds vs durationSec) — voint-panel-deki eyni
@@ -13,11 +13,13 @@ interface BackendCallResponse {
   durationSeconds: number | null;
   startedAt: string;
   endedAt: string | null;
+  openQuestionCount: number;
 }
 
 interface BackendCallDetailResponse extends BackendCallResponse {
   fullTranscript: string | null;
   aiSummary: string | null;
+  unansweredQuestions: UnansweredQuestion[] | null;
 }
 
 function toSummary(c: BackendCallResponse): CallSummary {
@@ -29,6 +31,7 @@ function toSummary(c: BackendCallResponse): CallSummary {
     endedAt: c.endedAt,
     durationSec: c.durationSeconds ?? 0,
     status: c.status,
+    openQuestionCount: c.openQuestionCount ?? 0,
   };
 }
 
@@ -51,5 +54,6 @@ export async function getCall(tenantId: string, callId: string): Promise<CallDet
     ...toSummary(data),
     aiSummary: data.aiSummary,
     fullTranscript: data.fullTranscript,
+    unansweredQuestions: data.unansweredQuestions ?? [],
   };
 }

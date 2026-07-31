@@ -142,7 +142,9 @@ export function TenantDetailPage() {
       )}
 
       {/* key: bir müəssisədən digərinə keçəndə köhnə siyahı bir an görünməsin. */}
-      {tab === "zengler" && <CallsTab key={tenant.id} tenantId={tenant.id} />}
+      {tab === "zengler" && (
+        <CallsTab key={tenant.id} tenantId={tenant.id} tenantKey={tenantKey!} />
+      )}
 
       {tab === "bilik-bazasi" && <RagTab key={tenant.id} tenantId={tenant.id} />}
 

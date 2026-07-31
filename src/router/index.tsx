@@ -6,6 +6,7 @@ import { TenantsPage } from "../pages/Tenants";
 import { TenantDetailPage } from "../pages/TenantDetail";
 import { LeadsPage } from "../pages/Leads";
 import { UsagePage } from "../pages/Usage";
+import { CallDetailPage } from "../pages/CallDetail";
 import { InvoicePage } from "../pages/Invoice";
 import { SettingsPage } from "../pages/Settings";
 import { RolesPage } from "../pages/Roles";
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
           { path: "/settings", element: <SettingsPage /> },
           { path: "/tenants/:tenantKey", element: <TenantDetailPage /> },
           { path: "/tenants/:tenantKey/invoice", element: <InvoicePage /> },
+          { path: "/tenants/:tenantKey/calls/:callId", element: <CallDetailPage /> },
         ],
       },
     ],

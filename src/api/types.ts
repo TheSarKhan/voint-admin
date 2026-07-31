@@ -162,6 +162,32 @@ export interface CallSummary {
   endedAt: string | null;
   durationSec: number;
   status: CallStatus;
+  /** Bu zengde hele baglanmamis cavabsiz sual sayi — siyahida isareleme ucun. */
+  openQuestionCount: number;
+}
+
+// Zeng bitenden sonra Gemini transkripti oxuyur ve agentin cavablaya bilmediyi suallari cixarir.
+// Bilik bazasindaki bosluq burada gorunur: sual baglananda cavab RAG-a sened kimi dusur.
+export type QuestionStatus = "OPEN" | "ANSWERED" | "DISMISSED";
+
+export interface UnansweredQuestion {
+  id: string;
+  tenantId: string;
+  callId: string;
+  question: string;
+  /** Sohbetin hansi meqaminda sorusulub — operator kontekstsiz suali anlamir. */
+  context: string | null;
+  status: QuestionStatus;
+  ragDocumentId: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+/** AI-nin teklif etdiyi cavab qaralamasi. Hec ne saxlanilmir — operator tesdiqleyene qeder. */
+export interface DraftAnswer {
+  answer: string;
+  usedKnowledge: string[];
+  missingFacts: string[];
 }
 
 // GET /calls/{callId} call_transcripts cedvelinden transkript + AI xulaseni elave edir.
@@ -170,6 +196,7 @@ export interface CallSummary {
 export interface CallDetail extends CallSummary {
   aiSummary: string | null;
   fullTranscript: string | null;
+  unansweredQuestions: UnansweredQuestion[];
 }
 
 /** Muessisenin bilik bazasi — agent cavablari buradan RAG ile qurur. */

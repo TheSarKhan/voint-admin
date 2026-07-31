@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-import { getCall, getCalls } from "../api/calls";
-import type { CallDetail, CallStatus, CallSummary } from "../api/types";
+import { getCalls } from "../api/calls";
+import type { CallStatus, CallSummary } from "../api/types";
 import { IconHeadset, IconRefresh, IconSearch } from "./icons";
 import {
   Alert,
@@ -11,7 +12,6 @@ import {
   EmptyState,
   Input,
   InlineSpinner,
-  Modal,
   Select,
   Spinner,
   StatusText,
@@ -46,106 +46,20 @@ const STATUS_TONE: Record<CallStatus, StatusTone> = {
   HANDOFF: "warn",
 };
 
-/**
- * Bir zəngin tam görünüşü.
- *
- * Transkript və AI xülasə hər zəng üçün yazılmır (webhook axını hələ onları doldurmur),
- * ona görə boş halda ekran "hələ yoxdur" deyir. Boş qutu göstərmək operatora "sistem
- * pozulub" kimi görünür, halbuki bu normal vəziyyətdir.
- */
-function CallDetailModal({
+export function CallsTab({
   tenantId,
-  callId,
-  onClose,
+  tenantKey,
 }: {
   tenantId: string;
-  callId: string;
-  onClose: () => void;
+  /** Ünvanda görünən açar (subdomain və ya UUID) — zəng səhifəsinin linki bununla qurulur. */
+  tenantKey: string;
 }) {
-  const [call, setCall] = useState<CallDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    getCall(tenantId, callId)
-      .then((c) => {
-        if (!cancelled) setCall(c);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(errorText(e, "Zəng məlumatı yüklənə bilmədi."));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tenantId, callId]);
-
-  return (
-    <Modal title="Zəng təfərrüatı" onClose={onClose} size="lg">
-      {error && <Alert tone="err">{error}</Alert>}
-      {!call && !error && <Spinner />}
-      {call && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <p className="text-xs text-fg-faint">Nömrə</p>
-              <p className="mt-1 text-sm text-fg">{call.callerNumber || "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-fg-faint">Başlayıb</p>
-              <p className="mt-1 text-sm text-fg">{formatDateTime(call.startedAt)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-fg-faint">Müddət</p>
-              <p className="mt-1 text-sm text-fg">{formatDuration(call.durationSec)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-fg-faint">Vəziyyət</p>
-              <p className="mt-1 text-sm">
-                <StatusText tone={STATUS_TONE[call.status]}>
-                  {STATUS_LABEL[call.status]}
-                </StatusText>
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-fg">AI xülasəsi</h3>
-            {call.aiSummary ? (
-              <p className="text-sm leading-relaxed text-fg-muted">{call.aiSummary}</p>
-            ) : (
-              <p className="text-sm text-fg-faint">
-                Bu zəng üçün xülasə yazılmayıb.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-fg">Transkript</h3>
-            {call.fullTranscript ? (
-              // Backend transkripti xam mətn bloku kimi saxlayır (strukturlaşdırılmış
-              // "speaker turns" deyil), ona görə burada da süni şəkildə bölünmür.
-              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-surface-2 p-4 font-mono text-xs leading-relaxed text-fg-muted">
-                {call.fullTranscript}
-              </pre>
-            ) : (
-              <p className="text-sm text-fg-faint">
-                Bu zəng üçün transkript yazılmayıb.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-export function CallsTab({ tenantId }: { tenantId: string }) {
+  const navigate = useNavigate();
   const [calls, setCalls] = useState<CallSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"ALL" | CallStatus>("ALL");
-  const [openCallId, setOpenCallId] = useState<string | null>(null);
 
   const load = async (silent = false) => {
     if (silent) setRefreshing(true);
@@ -252,18 +166,19 @@ export function CallsTab({ tenantId }: { tenantId: string }) {
                 <TH>Nömrə</TH>
                 <TH>Müddət</TH>
                 <TH>Vəziyyət</TH>
+                <TH>Bilik bazası</TH>
                 <TH>Dil</TH>
               </TR>
             </THead>
             <TBody>
               {filtered.length === 0 ? (
-                <TableEmpty colSpan={5} message="Süzgəcə uyğun zəng tapılmadı." />
+                <TableEmpty colSpan={6} message="Süzgəcə uyğun zəng tapılmadı." />
               ) : (
                 filtered.map((c) => (
                   <TR
                     key={c.id}
                     className="cursor-pointer"
-                    onClick={() => setOpenCallId(c.id)}
+                    onClick={() => navigate(`/tenants/${tenantKey}/calls/${c.id}`)}
                   >
                     <TD>{formatDateTime(c.startedAt)}</TD>
                     <TD>{c.callerNumber || "—"}</TD>
@@ -272,6 +187,16 @@ export function CallsTab({ tenantId }: { tenantId: string }) {
                       <StatusText tone={STATUS_TONE[c.status]}>
                         {STATUS_LABEL[c.status]}
                       </StatusText>
+                    </TD>
+                    {/* Dizayn qaydası: nişan/badge yoxdur — vəziyyət düz rəngli mətndir. */}
+                    <TD>
+                      {c.openQuestionCount > 0 ? (
+                        <StatusText tone="warn">
+                          {c.openQuestionCount} cavabsız sual
+                        </StatusText>
+                      ) : (
+                        <span className="text-fg-faint">—</span>
+                      )}
                     </TD>
                     <TD>{c.languageDetected ?? "—"}</TD>
                   </TR>
@@ -282,13 +207,6 @@ export function CallsTab({ tenantId }: { tenantId: string }) {
         </TableContainer>
       )}
 
-      {openCallId && (
-        <CallDetailModal
-          tenantId={tenantId}
-          callId={openCallId}
-          onClose={() => setOpenCallId(null)}
-        />
-      )}
     </Card>
   );
 }
