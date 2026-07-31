@@ -12,6 +12,7 @@ import {
   EmptyState,
   Input,
   InlineSpinner,
+  Pagination,
   Select,
   Spinner,
   StatusText,
@@ -46,6 +47,8 @@ const STATUS_TONE: Record<CallStatus, StatusTone> = {
   HANDOFF: "warn",
 };
 
+const PAGE_SIZE = 20;
+
 export function CallsTab({
   tenantId,
   tenantKey,
@@ -60,6 +63,7 @@ export function CallsTab({
   const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"ALL" | CallStatus>("ALL");
+  const [page, setPage] = useState(1);
 
   const load = async (silent = false) => {
     if (silent) setRefreshing(true);
@@ -99,6 +103,14 @@ export function CallsTab({
       return c.callerNumber?.toLowerCase().includes(needle);
     });
   }, [calls, q, status]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Süzgəc dəyişəndə nəticə kiçilir; köhnə səhifə nömrəsində qalmaq boş cədvəl göstərir.
+  const safePage = Math.min(page, pageCount);
+  const visible = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage],
+  );
 
   if (error && !calls) return <Alert tone="err">{error}</Alert>;
   if (!calls) return <Spinner />;
@@ -174,7 +186,7 @@ export function CallsTab({
               {filtered.length === 0 ? (
                 <TableEmpty colSpan={6} message="Süzgəcə uyğun zəng tapılmadı." />
               ) : (
-                filtered.map((c) => (
+                visible.map((c) => (
                   <TR
                     key={c.id}
                     className="cursor-pointer"
@@ -205,6 +217,17 @@ export function CallsTab({
             </TBody>
           </Table>
         </TableContainer>
+      )}
+
+      {/* Backend GET /calls düz siyahı qaytarır — bütün zənglər onsuz da yüklənib,
+          burada yalnız göstərilən hissə kəsilir. Pagination öz üst xəttini özü çəkir. */}
+      {calls.length > 0 && (
+        <Pagination
+          page={safePage}
+          pageCount={pageCount}
+          onChange={setPage}
+          totalLabel={`${filtered.length} zəng`}
+        />
       )}
 
     </Card>
