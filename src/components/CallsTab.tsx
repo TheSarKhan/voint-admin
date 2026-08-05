@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { getCalls } from "../api/calls";
 import type { CallStatus, CallSummary } from "../api/types";
@@ -200,12 +200,26 @@ export function CallsTab({
                 <TableEmpty colSpan={6} message="Süzgəcə uyğun zəng tapılmadı." />
               ) : (
                 visible.map((c) => (
+                  // Siçan üçün bütün sətir kliklənir; klaviatura üçün isə birinci xanada
+                  // ƏSL link var. Sətrə tabIndex vermək daha qısa olardı, amma ekran
+                  // oxuyucusu üçün sətir hələ də sadəcə cədvəl sətri olaraq qalır -
+                  // link isə "buraya keçid var" deyə elan olunur.
                   <TR
                     key={c.id}
                     className="cursor-pointer"
                     onClick={() => navigate(`/tenants/${tenantKey}/calls/${c.id}`)}
                   >
-                    <TD>{formatDateTime(c.startedAt)}</TD>
+                    <TD>
+                      <Link
+                        to={`/tenants/${tenantKey}/calls/${c.id}`}
+                        // Sətrin özü onsuz da naviqasiya edir; linkin klikini ona
+                        // ötürsək eyni keçid iki dəfə işləyər.
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-fg-muted"
+                      >
+                        {formatDateTime(c.startedAt)}
+                      </Link>
+                    </TD>
                     <TD>{c.callerNumber || "—"}</TD>
                     <TD>{formatDuration(c.durationSec)}</TD>
                     <TD>

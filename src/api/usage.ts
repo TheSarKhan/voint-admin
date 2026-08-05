@@ -1,4 +1,5 @@
 import { http } from "./client";
+import { invalidateTenant } from "./tenantCache";
 import type {
   BillingPlanInput,
   PageResult,
@@ -44,5 +45,7 @@ export async function updateBillingPlan(
   input: BillingPlanInput,
 ): Promise<Tenant> {
   const { data } = await http.put<Tenant>(`/tenants/${tenantId}/billing`, input);
+  // Tarif dəyişdi — keşdəki nüsxə köhnəldi (bax tenants.ts).
+  invalidateTenant(data);
   return data;
 }

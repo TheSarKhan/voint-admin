@@ -279,8 +279,20 @@ export function RagTab({ tenantId }: { tenantId: string }) {
                 <TableEmpty colSpan={5} message="Süzgəcə uyğun sənəd tapılmadı." />
               ) : (
                 filtered.map((d) => (
+                  // Siçan üçün bütün sətir açır; klaviatura üçün birinci xanada əsl düymə var.
                   <TR key={d.id} className="cursor-pointer" onClick={() => setViewing(d)}>
-                    <TD>{preview(d.content)}</TD>
+                    <TD>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewing(d);
+                        }}
+                        className="rounded text-left outline-none hover:underline focus-visible:ring-2 focus-visible:ring-fg-muted"
+                      >
+                        {preview(d.content)}
+                      </button>
+                    </TD>
                     <TD>{d.category || "—"}</TD>
                     <TD>{d.source || "—"}</TD>
                     <TD>{formatDateTime(d.createdAt)}</TD>

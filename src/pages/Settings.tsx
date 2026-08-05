@@ -9,6 +9,7 @@ import {
 } from "../api/settings";
 import type { ProviderHealth, SettingView } from "../api/types";
 import { listProviderHealth } from "../api/usage";
+import { backfillQuestionAnalysis } from "../api/questions";
 import {
   Alert,
   Button,
@@ -225,6 +226,8 @@ export function SettingsPage() {
 
       <TestEmailCard />
 
+      <BackfillCard />
+
       <Card>
         <CardHeader
           title="Açarlar"
@@ -291,6 +294,56 @@ function TestEmailCard() {
           </p>
         )}
       </CardBody>
+    </Card>
+  );
+}
+
+/**
+ * Köhnə zəngləri cavabsız sual təhlilindən keçirir.
+ *
+ * Təhlil zəng bitəndə avtomatik işləyir, amma ondan ƏVVƏL yazılmış zənglər toxunulmamış qalır —
+ * yəni funksiya işə düşən gün siyahı boş görünür. Bu düymə onları növbəyə salır. Avtomatik
+ * etmirik: hər sətir bir Gemini çağırışıdır və nə vaxt ödəniləcəyinə qərar vermək adamın işidir.
+ */
+function BackfillCard() {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async () => {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      const queued = await backfillQuestionAnalysis(50);
+      setResult(
+        queued === 0
+          ? "Təhlil olunmamış zəng qalmayıb."
+          : `${queued} zəng növbəyə salındı. Təhlil arxa fonda gedir — bir neçə dəqiqədən sonra müəssisənin Zənglər siyahısında görünəcək.`,
+      );
+    } catch (e) {
+      setError(errorText(e, "Təhlil başladıla bilmədi."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader
+        title="Köhnə zənglərin təhlili"
+        description="Cavabsız sual təhlili yeni zənglərdə avtomatik işləyir. Bu düymə ondan əvvəlki zəngləri bir dəfəlik keçirir."
+        actions={
+          <Button variant="secondary" size="sm" loading={busy} onClick={run}>
+            Təhlil et
+          </Button>
+        }
+      />
+      {(result || error) && (
+        <CardBody>
+          {error ? <Alert tone="err">{error}</Alert> : <Alert tone="ok">{result}</Alert>}
+        </CardBody>
+      )}
     </Card>
   );
 }

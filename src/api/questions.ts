@@ -59,3 +59,19 @@ export async function dismissQuestion(
   );
   return data;
 }
+
+/**
+ * Təhlildən əvvəl yazılmış zəngləri sonradan təhlildən keçirir (yalnız platforma işçisi).
+ *
+ * Əl ilə tetiklenir, avtomatik yox: hər zəng bir Gemini çağırışıdır və nə vaxt ödəniləcəyinə
+ * qərar vermək adamın işidir (bax CallAnalysisBackfillService).
+ */
+export async function backfillQuestionAnalysis(limit = 25): Promise<number> {
+  const { data } = await http.post<{ queued: number }>(
+    "/admin/questions/backfill",
+    null,
+    { params: { limit } },
+  );
+  return data.queued;
+}
+

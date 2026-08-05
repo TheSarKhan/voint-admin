@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getTenantAnalytics } from "../api/analytics";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
@@ -19,6 +19,27 @@ import {
   formatDuration,
   formatPercent,
 } from "../lib/format";
+
+const TAB_VALUES = [
+  "umumi",
+  "zengler",
+  "bilik-bazasi",
+  "istifadeciler",
+  "rollar",
+  "hesablasma",
+  "konfiqurasiya",
+];
+
+/** Gizli tab DOM-da qalir (sorgusu itmesin), amma yer tutmur. */
+function TabPanel({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: ReactNode;
+}) {
+  return <div hidden={!active}>{children}</div>;
+}
 
 function CallsBarChart({ data }: { data: AnalyticsOverview["callsByDay"] }) {
   const max = Math.max(...data.map((d) => d.count), 1);
@@ -52,7 +73,29 @@ export function TenantDetailPage() {
   const [error, setError] = useState<string | null>(null);
   // Tek uzun sehife artiq tasimir: statistika, konfiqurasiya, istifadeciler,
   // hesablasma ve zengler ayri-ayri isler — hamisini alt-alta yigmaq axtarmagi cetinlesdirir.
-  const [tab, setTab] = useState("umumi");
+  //
+  // Tab UNVANDA saxlanilir, komponent veziyyetinde yox. Sebeb: zeng detali artiq ayrica
+  // sehifedir, ve oradan "muessiseye qayit" komponent veziyyetini sifirlayib Umumi tabina
+  // atirdi — istifadeci hemise yerini itirirdi. Brauzerin geri duymesi de eyni. Ustelik
+  // "CES-in Hesablasma tabi" linkini paylasmaq mumkun olur.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = TAB_VALUES.includes(searchParams.get("tab") ?? "")
+    ? (searchParams.get("tab") as string)
+    : "umumi";
+  const setTab = (value: string) => {
+    // replace: tab deyisdirmek brauzer tarixcesinde ayrica addim yaratmamalidir, yoxsa
+    // "geri" duymesi tablar arasinda geze-geze istifadecini sehifeden cixarmir.
+    setSearchParams(value === "umumi" ? {} : { tab: value }, { replace: true });
+  };
+
+  // Bir defe acilan tab bagli qalmir - gizledilir. Sertli render (tab === "x" && <X/>) her
+  // kecidde komponenti tamamile sokur, geri qayidanda ise sifirdan sorgu verir: Zengler ->
+  // Umumi -> Zengler ucuncu defe GET /calls demekdir. Ilk baxisda yuklenmemesi de vacibdir,
+  // yoxsa sehife acilan kimi yeddi tabin hamisi sorgu verer.
+  const [visited, setVisited] = useState<string[]>([tab]);
+  useEffect(() => {
+    setVisited((prev) => (prev.includes(tab) ? prev : [...prev, tab]));
+  }, [tab]);
 
   useEffect(() => {
     if (!tenantKey) return;
@@ -107,7 +150,7 @@ export function TenantDetailPage() {
         ]}
       />
 
-      {tab === "umumi" && (
+      <TabPanel active={tab === "umumi"}>
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Ümumi zəng" value={String(analytics.totalCalls)} hint="Son 30 gün" />
@@ -139,26 +182,44 @@ export function TenantDetailPage() {
 
           <VapiStatus tenant={tenant} onSynced={setTenant} />
         </>
-      )}
+      </TabPanel>
 
       {/* key: bir müəssisədən digərinə keçəndə köhnə siyahı bir an görünməsin. */}
-      {tab === "zengler" && (
-        <CallsTab key={tenant.id} tenantId={tenant.id} tenantKey={tenantKey!} />
+      {visited.includes("zengler") && (
+        <TabPanel active={tab === "zengler"}>
+          <CallsTab key={tenant.id} tenantId={tenant.id} tenantKey={tenantKey!} />
+        </TabPanel>
       )}
 
-      {tab === "bilik-bazasi" && <RagTab key={tenant.id} tenantId={tenant.id} />}
-
-      {tab === "istifadeciler" && <UsersTab tenantId={tenant.id} />}
-
-      {tab === "rollar" && <RolesManager key={tenant.id} tenantId={tenant.id} />}
-
-      {tab === "hesablasma" && (
-        <BillingSection tenant={tenant} onPlanSaved={setTenant} />
+      {visited.includes("bilik-bazasi") && (
+        <TabPanel active={tab === "bilik-bazasi"}>
+          <RagTab key={tenant.id} tenantId={tenant.id} />
+        </TabPanel>
       )}
 
-      {tab === "konfiqurasiya" && (
-        // key: bir muessiseden digerine kecende forma kohne deyerlerle qalmasin.
-        <ConfigTab key={tenant.id} tenant={tenant} onSaved={setTenant} />
+      {visited.includes("istifadeciler") && (
+        <TabPanel active={tab === "istifadeciler"}>
+          <UsersTab tenantId={tenant.id} />
+        </TabPanel>
+      )}
+
+      {visited.includes("rollar") && (
+        <TabPanel active={tab === "rollar"}>
+          <RolesManager key={tenant.id} tenantId={tenant.id} />
+        </TabPanel>
+      )}
+
+      {visited.includes("hesablasma") && (
+        <TabPanel active={tab === "hesablasma"}>
+          <BillingSection tenant={tenant} onPlanSaved={setTenant} />
+        </TabPanel>
+      )}
+
+      {visited.includes("konfiqurasiya") && (
+        <TabPanel active={tab === "konfiqurasiya"}>
+          {/* key: bir muessiseden digerine kecende forma kohne deyerlerle qalmasin. */}
+          <ConfigTab key={tenant.id} tenant={tenant} onSaved={setTenant} />
+        </TabPanel>
       )}
     </div>
   );

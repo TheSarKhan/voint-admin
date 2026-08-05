@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 /** Bir cədvəl sətrinin təxmini hündürlüyü (px-5 py-3 + text-sm). Ölçü alınana qədər istifadə olunur. */
 const FALLBACK_ROW_HEIGHT = 45;
@@ -28,12 +28,16 @@ export function useFitRows(
 ): number | null {
   const [rows, setRows] = useState<number | null>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
+    const body = bodyRef.current;
+    if (!body) return;
 
     const measure = () => {
-      const body = bodyRef.current;
-      if (!body) return;
+      // Gizli element (məsələn açılmamış tab) sıfır ölçü verir. Onu ölçmək cədvəli üç sətirə
+      // salır və tab açılanda düzəlmir - ona görə görünməyəndə heç ölçmürük, aşağıdakı
+      // ResizeObserver isə görünən anda özü yenidən çağırır.
+      if (body.offsetParent === null) return;
 
       const top = body.getBoundingClientRect().top;
       // Mövcud sətirdən həqiqi hündürlüyü götür — şrift və ya doldurma dəyişsə,
@@ -47,24 +51,15 @@ export function useFitRows(
 
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [bodyRef, enabled]);
 
-  // Şriftlər gec yüklənəndə sətir hündürlüyü dəyişir; bir dəfə yenidən ölçürük.
-  useEffect(() => {
-    if (!enabled || !document.fonts) return;
-    let cancelled = false;
-    document.fonts.ready.then(() => {
-      if (cancelled) return;
-      const body = bodyRef.current;
-      if (!body) return;
-      const top = body.getBoundingClientRect().top;
-      const firstRow = body.querySelector("tr");
-      const rowHeight = firstRow?.getBoundingClientRect().height || FALLBACK_ROW_HEIGHT;
-      setRows(Math.max(MIN_ROWS, Math.floor((window.innerHeight - top - RESERVED_BELOW) / rowHeight)));
-    });
+    // Gizlidən görünənə keçid, şriftin gec yüklənməsi, yan panelin dəyişməsi - hamısı
+    // elementin ölçüsünü dəyişir və hamısı yenidən ölçmək üçün səbəbdir.
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+
     return () => {
-      cancelled = true;
+      window.removeEventListener("resize", measure);
+      observer.disconnect();
     };
   }, [bodyRef, enabled]);
 

@@ -41,10 +41,22 @@ export function ProviderStatus() {
     load();
     // Backend hər 5 dəqiqədən bir yoxlayır; burada bir az tez-tez soruşuruq ki,
     // səhifə açıq qalanda köhnə vəziyyət görünməsin.
-    const timer = setInterval(load, 60_000);
+    //
+    // Arxa fondakı tab soruşmur: heç kim baxmayan ekranı yeniləmək üçün dəqiqədə bir sorğu
+    // vermək mənasızdır — brauzer günlərlə açıq qala bilər. Tab yenidən görünəndə dərhal
+    // bir dəfə soruşuruq ki, gözə köhnə vəziyyət dəyməsin.
+    const tick = () => {
+      if (!document.hidden) load();
+    };
+    const timer = setInterval(tick, 60_000);
+    const onVisible = () => {
+      if (!document.hidden) load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 

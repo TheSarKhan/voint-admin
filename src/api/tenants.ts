@@ -1,5 +1,7 @@
 import { http } from "./client";
 import type { PageResult, Tenant, TenantCreateInput } from "./types";
+import { cacheTenant, getCachedTenant, invalidateTenant, clearTenantCache } from "./tenantCache";
+
 
 /** Serverden sehifelenmis, siralanmis ve axtarilmis tenant siyahisi. */
 export async function listTenants(params: {
@@ -13,14 +15,16 @@ export async function listTenants(params: {
   return data;
 }
 
-export async function getTenant(tenantId: string): Promise<Tenant> {
-  const { data } = await http.get<Tenant>(`/tenants/${tenantId}`);
-  return data;
+export async function getTenant(tenantKey: string): Promise<Tenant> {
+  const cached = getCachedTenant(tenantKey);
+  if (cached) return cached;
+  const { data } = await http.get<Tenant>(`/tenants/${tenantKey}`);
+  return cacheTenant(data);
 }
 
 export async function createTenant(input: TenantCreateInput): Promise<Tenant> {
   const { data } = await http.post<Tenant>("/tenants", input);
-  return data;
+  return cacheTenant(data);
 }
 
 /**
@@ -47,16 +51,20 @@ export async function updateTenantConfig(
   },
 ): Promise<Tenant> {
   const { data } = await http.put<Tenant>(`/tenants/${tenantId}/config`, input);
-  return data;
+  invalidateTenant(getCachedTenant(tenantId) ?? tenantId);
+  return cacheTenant(data);
 }
 
 export async function syncTenantVapi(tenantId: string): Promise<Tenant> {
   const { data } = await http.post<Tenant>(`/tenants/${tenantId}/vapi-sync`);
-  return data;
+  invalidateTenant(getCachedTenant(tenantId) ?? tenantId);
+  return cacheTenant(data);
 }
 
 /** Butun tenant-lari yeniden gonderir — ses ayarlari deyisende lazim olur. */
 export async function syncAllVapi(): Promise<number> {
   const { data } = await http.post<{ synced: number }>("/tenants/vapi-sync-all");
+  // Hansı müəssisələrin dəyişdiyi bilinmir - hamısını atırıq.
+  clearTenantCache();
   return data.synced;
 }
