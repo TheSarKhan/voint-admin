@@ -13,7 +13,7 @@ export interface PublicConfig {
 }
 
 /** Backend elcatan olmasa panel dagilmasin deye ehtiyat deyer. */
-const FALLBACK: PublicConfig = { panelDomain: "sarkhan.az" };
+const FALLBACK: PublicConfig = { panelDomain: "voint.az" };
 
 let cached: PublicConfig | null = null;
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getTenantUsage } from "../api/usage";
+import { getPublicConfig } from "../api/publicConfig";
 import { getTenant } from "../api/tenants";
 import type { Tenant, UsageReport } from "../api/types";
 import { IconArrowLeft, IconDownload } from "../components/icons";
@@ -70,6 +71,11 @@ export function InvoicePage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [platformDomain, setPlatformDomain] = useState("voint.az");
+
+  useEffect(() => {
+    getPublicConfig().then((c) => setPlatformDomain(c.panelDomain));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,7 +158,9 @@ export function InvoicePage() {
             <p className="mt-1 text-xs leading-relaxed text-[#555]">
               AI səs agenti və CRM platforması
               <br />
-              voint.sarkhan.az
+              {/* Domen backend-dən gəlir: qaimə çap olunub müştəriyə gedir, orada
+                  köhnə ünvan yazmaq onu açılmayan bir sayta yönəldir. */}
+              {platformDomain}
             </p>
           </div>
           <div className="text-right">

@@ -44,7 +44,7 @@ async function fetchMeWithToken(accessToken: string): Promise<AuthUser> {
 export class WrongPanelError extends Error {
   constructor() {
     super(
-      "Bu hesabın admin panelə girişi yoxdur. Müəssisə hesabları öz panelindən istifadə edir: voint.sarkhan.az",
+      "Bu hesabın admin panelə girişi yoxdur. Müəssisə hesabları öz panelindən istifadə edir.",
     );
     this.name = "WrongPanelError";
   }
