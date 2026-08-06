@@ -66,3 +66,20 @@ export async function me(): Promise<AuthUser> {
   const { data } = await http.get<BackendMeResponse>("/auth/me");
   return toAuthUser(data);
 }
+
+/**
+ * "Şifrəmi unutdum" — e-poçtla sıfırlama linki istəyir.
+ *
+ * Backend həmişə 202 qaytarır: e-poçtun qeydiyyatda olub-olmaması AÇIQLANMIR. Ona görə UI də
+ * "hesab varsa link göndərildi" deyir, "belə hesab yoxdur" demir — əks halda bu endpoint
+ * e-poçt yoxlamaq üçün istifadə oluna bilərdi.
+ */
+export async function forgotPassword(email: string): Promise<void> {
+  await http.post("/auth/forgot-password", { email });
+}
+
+/** Linkdəki token + yeni şifrə. Uğurlu olsa köhnə şifrə dərhal işləməyi dayandırır. */
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await http.post("/auth/reset-password", { token, newPassword });
+}
+

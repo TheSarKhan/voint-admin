@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import { Layout } from "../components/Layout";
 import { LoginPage } from "../pages/Login";
+import { ForgotPasswordPage } from "../pages/ForgotPassword";
+import { ResetPasswordPage } from "../pages/ResetPassword";
 import { TenantsPage } from "../pages/Tenants";
 import { TenantDetailPage } from "../pages/TenantDetail";
 import { LeadsPage } from "../pages/Leads";
@@ -31,6 +33,9 @@ function ProtectedRoute() {
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  // Public: giriş etməmiş istifadəçi üçün. Şifrə sıfırlama linki e-poçtdan buraya gəlir.
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
     element: <ProtectedRoute />,
     children: [
