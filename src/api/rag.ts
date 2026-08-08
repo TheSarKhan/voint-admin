@@ -20,3 +20,18 @@ export async function createRagDocument(
 export async function deleteRagDocument(tenantId: string, docId: string): Promise<void> {
   await http.delete(`/tenants/${tenantId}/rag/documents/${docId}`);
 }
+
+export interface RagBackfillResult {
+  total: number;
+  embedded: number;
+  geminiConfigured: boolean;
+}
+
+/**
+ * Embedding-i olmayan senedleri indi tamamlayir — normalda yalniz server acilanda islenir,
+ * bu duyme restart gozlemeden eyni isi indi gorur (mes. Gemini acari yeni duzeldilibse).
+ */
+export async function backfillRagEmbeddings(): Promise<RagBackfillResult> {
+  const { data } = await http.post<RagBackfillResult>("/admin/rag/backfill-embeddings");
+  return data;
+}

@@ -23,6 +23,17 @@ export async function saveSetting(
   return data;
 }
 
+/**
+ * Acarin tam deyerini geri qaytarir. Yalniz SUPER_ADMIN, ve her cagiris serverde loglanir —
+ * ehtiyatli istifade olunmalidir, adeten hint kifayetdir.
+ */
+export async function revealSetting(key: string): Promise<string> {
+  const { data } = await http.get<{ value: string }>(
+    `/admin/settings/${encodeURIComponent(key)}/reveal`,
+  );
+  return data.value;
+}
+
 /** Panel deyerini silir — ayar yeniden serverin konfiqurasiyasina qayidir. */
 export async function clearSetting(key: string): Promise<SettingView[]> {
   const { data } = await http.delete<SettingView[]>(
