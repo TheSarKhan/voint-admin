@@ -20,6 +20,8 @@ export interface AuthUser {
   // null qaytarir (butun platforma cixisi).
   tenantId: string | null;
   role: string;
+  /** Granular rolun görünən adı (məs. "Platforma admini") - sidebar-da bunu göstər, `role`-u yox. */
+  roleName: string | null;
 }
 
 export interface LoginResponse {

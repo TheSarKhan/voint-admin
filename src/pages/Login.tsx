@@ -26,14 +26,21 @@ export function LoginPage() {
       setSession(res.token, res.user, res.refreshToken);
       navigate("/", { replace: true });
     } catch (err) {
-      // Yanlis panel xetasi konkretdir — oldugu kimi gosterilir, "melumatlari yoxlayin"
-      // deyil, cunki melumatlar duzgundur, sadece burasi onlarin yeri deyil.
+      // Yanlis panel ve blok xetalari konkretdir — oldugu kimi gosterilir, "melumatlari
+      // yoxlayin" deyil, cunki melumatlar duzgundur, sadece hesaba icaze yoxdur.
+      const blockedDetail =
+        (err as { response?: { status?: number; data?: { detail?: string } } }).response
+          ?.status === 403
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
       const message =
         err instanceof WrongPanelError
           ? err.message
-          : err instanceof Error && !("response" in err)
-            ? err.message
-            : "Giriş alınmadı. Məlumatları yoxlayın.";
+          : blockedDetail
+            ? blockedDetail
+            : err instanceof Error && !("response" in err)
+              ? err.message
+              : "Giriş alınmadı. Məlumatları yoxlayın.";
       setError(message);
     } finally {
       setLoading(false);
