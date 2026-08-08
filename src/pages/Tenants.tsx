@@ -6,6 +6,7 @@ import { getPublicConfig } from "../api/publicConfig";
 import type { Tenant, TenantCreateInput } from "../api/types";
 import { DataTable, type Column } from "../components/DataTable";
 import { IconPlus } from "../components/icons";
+import { LanguagePicker, serializeLanguages } from "../components/LanguagePicker";
 import {
   btnGhost,
   btnPrimary,
@@ -24,7 +25,6 @@ const emptyForm: TenantCreateInput = {
   greetingText: "",
   workingHours: "",
   handoffNumber: "",
-  languageConfig: "",
 };
 
 function CreateTenantModal({
@@ -35,6 +35,11 @@ function CreateTenantModal({
   onCreated: () => void;
 }) {
   const [form, setForm] = useState<TenantCreateInput>(emptyForm);
+  // Dil konfiqurasiyası ayrıca idarə olunur (bax LanguagePicker) - bazada JSON kimi
+  // saxlanılan sahəni əl ilə yazdırmaq operatoru bir vergül səhvi ilə agentin dilini
+  // tamamilə itirmək riskinə atır.
+  const [defLang, setDefLang] = useState("az");
+  const [supported, setSupported] = useState<string[]>(["az"]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [domain, setDomain] = useState("");
@@ -42,6 +47,12 @@ function CreateTenantModal({
   useEffect(() => {
     getPublicConfig().then((c) => setDomain(c.panelDomain));
   }, []);
+
+  const toggleLanguage = (code: string) => {
+    setSupported((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -55,7 +66,7 @@ function CreateTenantModal({
         greetingText: form.greetingText?.trim() || undefined,
         workingHours: form.workingHours?.trim() || undefined,
         handoffNumber: form.handoffNumber?.trim() || undefined,
-        languageConfig: form.languageConfig?.trim() || undefined,
+        languageConfig: serializeLanguages(defLang, supported),
       });
       onCreated();
       onClose();
@@ -137,14 +148,12 @@ function CreateTenantModal({
           />
         </Field>
 
-        <Field label="Dil konfiqurasiyası">
-          <input
-            className={inputCls}
-            placeholder='az, ya da {"default":"az","supported":["az","ru","en"]}'
-            value={form.languageConfig}
-            onChange={(e) => setForm({ ...form, languageConfig: e.target.value })}
-          />
-        </Field>
+        <LanguagePicker
+          defLang={defLang}
+          supported={supported}
+          onChangeDefLang={setDefLang}
+          onToggleLanguage={toggleLanguage}
+        />
 
         {error && (
           <p className="rounded-md border border-err/40 bg-err/10 px-3 py-2 text-sm text-err">

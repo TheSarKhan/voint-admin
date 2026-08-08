@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
 import { updateTenantConfig } from "../api/tenants";
 import type { Tenant } from "../api/types";
+import { LanguagePicker, parseLanguages, serializeLanguages } from "./LanguagePicker";
 import {
   Alert,
   Button,
@@ -9,7 +10,6 @@ import {
   CardBody,
   CardHeader,
   Input,
-  Select,
   Textarea,
 } from "./ui";
 import { formatDateTime } from "../lib/format";
@@ -17,47 +17,6 @@ import { formatDateTime } from "../lib/format";
 function errorText(e: unknown, fallback: string): string {
   const err = e as AxiosError<{ detail?: string }>;
   return err.response?.data?.detail ?? fallback;
-}
-
-/** Agentin danışa bildiyi dillər. Soniox və ElevenLabs hər üçünü dəstəkləyir. */
-const LANGUAGES = [
-  { code: "az", label: "Azərbaycanca" },
-  { code: "ru", label: "Rusca" },
-  { code: "en", label: "İngiliscə" },
-  { code: "tr", label: "Türkcə" },
-];
-
-/**
- * Dil konfiqurasiyası bazada JSON kimi saxlanılır.
- *
- * Operatora JSON yazdırmaq olmaz — bir vergül unudulsa agent dili tamamilə itirir. Ona görə
- * burada oxunur, düymələrlə redaktə olunur, yenidən JSON kimi yazılır. Tanımadığımız açarlar
- * SAXLANILIR: bu sahəyə sonradan başqa bir şey əlavə olunubsa, bu ekran onu silməməlidir.
- */
-function parseLanguages(raw: string | null): {
-  def: string;
-  supported: string[];
-  extra: Record<string, unknown>;
-  broken: boolean;
-} {
-  if (!raw || !raw.trim()) {
-    return { def: "az", supported: ["az"], extra: {}, broken: false };
-  }
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const { default: def, supported, ...extra } = parsed;
-    return {
-      def: typeof def === "string" ? def : "az",
-      supported: Array.isArray(supported)
-        ? supported.filter((s): s is string => typeof s === "string")
-        : ["az"],
-      extra,
-      broken: false,
-    };
-  } catch {
-    // Sahə əl ilə pozulubsa forma onu uydurmamalıdır - istifadəçiyə deyilir.
-    return { def: "az", supported: ["az"], extra: {}, broken: true };
-  }
 }
 
 export function ConfigTab({
@@ -100,17 +59,11 @@ export function ConfigTab({
     setError(null);
     setDone(false);
     try {
-      // Əsas dil dəstəklənənlərin içində olmalıdır, yoxsa agent heç bir dildə başlaya bilmir.
-      const langs = supported.includes(defLang) ? supported : [defLang, ...supported];
       const updated = await updateTenantConfig(tenant.id, {
         greetingText: greeting.trim(),
         workingHours: hours.trim(),
         handoffNumber: handoff.trim(),
-        languageConfig: JSON.stringify({
-          ...initialLangs.extra,
-          default: defLang,
-          supported: langs,
-        }),
+        languageConfig: serializeLanguages(defLang, supported, initialLangs.extra),
         sttDomain: domain.trim(),
         sttTopic: topic.trim(),
         sttVocabulary: words.join(","),
@@ -182,38 +135,15 @@ export function ConfigTab({
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Select
-              label="Əsas dil"
-              help="Agent bu dildə başlayır."
-              value={defLang}
-              onChange={(e) => {
-                setDefLang(e.target.value);
-                setDone(false);
-              }}
-              options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
-            />
-            <div>
-              <span className="mb-2 block text-sm font-medium text-fg">Dəstəklənən dillər</span>
-              <div className="flex flex-wrap gap-x-5 gap-y-2">
-                {LANGUAGES.map((l) => (
-                  <label key={l.code} className="flex items-center gap-2 text-sm text-fg">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-accent"
-                      checked={supported.includes(l.code) || l.code === defLang}
-                      disabled={l.code === defLang}
-                      onChange={() => toggleLanguage(l.code)}
-                    />
-                    {l.label}
-                  </label>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-fg-muted">
-                Əsas dil həmişə daxildir və çıxarıla bilməz.
-              </p>
-            </div>
-          </div>
+          <LanguagePicker
+            defLang={defLang}
+            supported={supported}
+            onChangeDefLang={(code) => {
+              setDefLang(code);
+              setDone(false);
+            }}
+            onToggleLanguage={toggleLanguage}
+          />
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Input
