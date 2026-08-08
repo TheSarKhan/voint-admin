@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { IconSearch } from "./icons";
 import {
   Card,
@@ -56,6 +56,39 @@ export interface QueryState {
 }
 
 const SIZES = [10, 20, 50, 100];
+
+/**
+ * Backend sehifelemə vermədiyi (duz List qaytaran) endpoint-ləri DataTable-a qoşur.
+ *
+ * Axtarış/sıralama/sehifələmə brauzerdə aparılır — DataTable-ın gözlədiyi `fetchPage`
+ * formasına uyğunlaşdırır ki, hər endpoint üçün əl ilə cədvəl qurmaq əvəzinə bu tək,
+ * sınanmış komponent işləsin. Siyahı yüzlərlə sətirdən böyüyəndə həll backend-ə həqiqi
+ * sehifələmə əlavə etməkdir, burada saxta server simulyasiyası qurmaq deyil.
+ */
+export function clientPage<T>(
+  rows: T[],
+  matches: (row: T, needle: string) => boolean,
+  compare: (key: string) => (a: T, b: T) => number,
+): (state: QueryState) => Promise<PageResult<T>> {
+  return async (state) => {
+    const needle = state.q.trim().toLowerCase();
+    let filtered = needle ? rows.filter((r) => matches(r, needle)) : rows;
+    if (state.sort) {
+      const cmp = compare(state.sort);
+      filtered = [...filtered].sort((a, b) => (state.direction === "desc" ? -cmp(a, b) : cmp(a, b)));
+    }
+    const from = state.page * state.size;
+    return {
+      content: filtered.slice(from, from + state.size),
+      page: state.page,
+      size: state.size,
+      totalElements: filtered.length,
+      totalPages: Math.max(1, Math.ceil(filtered.length / state.size)),
+      sort: state.sort,
+      direction: state.direction,
+    };
+  };
+}
 
 export function DataTable<T>({
   columns,
@@ -147,15 +180,6 @@ export function DataTable<T>({
     );
   };
 
-  const total = result?.totalElements ?? 0;
-  const shown = result?.content.length ?? 0;
-  const from = total === 0 ? 0 : state.page * state.size + 1;
-
-  const totalLabel = useMemo(() => {
-    if (total === 0) return "";
-    return `${from}–${from + shown - 1} / ${total}`;
-  }, [from, shown, total]);
-
   return (
     <Card>
       {(searchable || toolbar) && (
@@ -202,7 +226,7 @@ export function DataTable<T>({
               </tr>
             ) : error ? (
               <TableEmpty colSpan={columns.length} message={error} />
-            ) : shown === 0 ? (
+            ) : (result?.content.length ?? 0) === 0 ? (
               <TableEmpty
                 colSpan={columns.length}
                 message={state.q ? `"${state.q}" üçün nəticə yoxdur` : emptyMessage}
@@ -251,7 +275,6 @@ export function DataTable<T>({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-fg-faint">{totalLabel}</span>
           <Select
             aria-label="Səhifə ölçüsü"
             value={String(state.size)}
