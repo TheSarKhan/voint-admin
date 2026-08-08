@@ -6,7 +6,6 @@ import { getPublicConfig } from "../api/publicConfig";
 import type { Tenant, TenantCreateInput } from "../api/types";
 import { DataTable, type Column } from "../components/DataTable";
 import { IconPlus } from "../components/icons";
-import { ProviderStatus } from "../components/ProviderStatus";
 import {
   btnGhost,
   btnPrimary,
@@ -247,10 +246,6 @@ export function TenantsPage() {
           </button>
         }
       />
-
-      <div className="mb-6">
-        <ProviderStatus />
-      </div>
 
       <DataTable
         columns={columns}

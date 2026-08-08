@@ -232,3 +232,42 @@ export interface Lead {
   createdAt: string;
   updatedAt?: string | null;
 }
+
+// Backend (com.starsoft.voint.dashboard.dto.DashboardResponse) — sahe adlari birebir uygun,
+// adapter lazim deyil.
+export interface DashboardData {
+  tenantCount: number;
+  callsToday: number;
+  callsThisMonth: number;
+  invoiceAzn: number;
+  costAzn: number;
+  marginAzn: number;
+  /** 0-100 miqyasında; qaimə 0 olanda null (heç nə hesablanmayıb). */
+  marginPercent: number | null;
+  pendingApprovals: number;
+  openQuestions: number;
+  newLeads: number;
+  callsByDay: { date: string; count: number }[];
+  recentCalls: DashboardRecentCall[];
+  topTenants: DashboardTenantMargin[];
+}
+
+export interface DashboardRecentCall {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  callerNumber: string | null;
+  status: CallStatus;
+  startedAt: string;
+  durationSeconds: number | null;
+}
+
+export interface DashboardTenantMargin {
+  tenantId: string;
+  tenantName: string;
+  calls: number;
+  invoiceAzn: number;
+  marginAzn: number;
+  /** 0-100 miqyasında, artıq faizdir — formatPercent() ilə deyil, birbaşa göstərilir. */
+  marginPercent: number | null;
+}

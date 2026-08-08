@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import {
   IconBuilding,
+  IconDashboard,
   IconLogout,
   IconReceipt,
   IconSettings,
@@ -18,7 +19,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: "/", label: "Bizneslər", icon: IconBuilding },
+  { to: "/", label: "Ümumi baxış", icon: IconDashboard },
+  { to: "/tenants", label: "Bizneslər", icon: IconBuilding },
   { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
   { to: "/usage", label: "Hesablaşma", icon: IconReceipt },
   { to: "/roles", label: "Rollar", icon: IconShield },

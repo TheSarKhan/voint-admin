@@ -4,6 +4,7 @@ import { Layout } from "../components/Layout";
 import { LoginPage } from "../pages/Login";
 import { ForgotPasswordPage } from "../pages/ForgotPassword";
 import { ResetPasswordPage } from "../pages/ResetPassword";
+import { DashboardPage } from "../pages/Dashboard";
 import { TenantsPage } from "../pages/Tenants";
 import { TenantDetailPage } from "../pages/TenantDetail";
 import { LeadsPage } from "../pages/Leads";
@@ -42,7 +43,8 @@ export const router = createBrowserRouter([
       {
         element: <Layout />,
         children: [
-          { path: "/", element: <TenantsPage /> },
+          { path: "/", element: <DashboardPage /> },
+          { path: "/tenants", element: <TenantsPage /> },
           { path: "/leads", element: <LeadsPage /> },
           { path: "/usage", element: <UsagePage /> },
           { path: "/roles", element: <RolesPage /> },

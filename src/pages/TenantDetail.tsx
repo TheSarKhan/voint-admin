@@ -123,7 +123,7 @@ export function TenantDetailPage() {
   return (
     <div>
       <Link
-        to="/"
+        to="/tenants"
         className="mb-4 inline-flex items-center gap-2 text-sm text-fg-muted transition-colors hover:text-fg"
       >
         <IconArrowLeft width={14} height={14} />
