@@ -266,13 +266,11 @@ export function RagTab({ tenantId }: { tenantId: string }) {
         <TableContainer>
           <Table>
             <THead>
-              <TR>
-                <TH>Məzmun</TH>
-                <TH>Kateqoriya</TH>
-                <TH>Mənbə</TH>
-                <TH>Əlavə olunub</TH>
-                <TH className="w-10" />
-              </TR>
+              <TH>Məzmun</TH>
+              <TH>Kateqoriya</TH>
+              <TH>Mənbə</TH>
+              <TH>Əlavə olunub</TH>
+              <TH className="w-10" />
             </THead>
             <TBody>
               {filtered.length === 0 ? (

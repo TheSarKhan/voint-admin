@@ -93,11 +93,10 @@ function TopTenantsCard({ tenants }: { tenants: DashboardTenantMargin[] }) {
         <TableContainer>
           <Table>
             <THead>
-              <TR>
-                <TH>Müəssisə</TH>
-                <TH className="text-right">Qaimə</TH>
-                <TH className="text-right">Marj</TH>
-              </TR>
+              <TH>Müəssisə</TH>
+              <TH className="text-right">Zəng</TH>
+              <TH className="text-right">Qaimə</TH>
+              <TH className="text-right">Marj</TH>
             </THead>
             <TBody>
               {tenants.map((t) => (
@@ -109,15 +108,16 @@ function TopTenantsCard({ tenants }: { tenants: DashboardTenantMargin[] }) {
                     >
                       {t.tenantName}
                     </Link>
-                    <p className="text-xs text-fg-faint">{formatNumber(t.calls)} zəng</p>
                   </TD>
-                  <TD className="text-right tabular-nums text-fg-muted">
+                  <TD className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                    {formatNumber(t.calls)}
+                  </TD>
+                  <TD className="whitespace-nowrap text-right tabular-nums text-fg-muted">
                     {formatMoney(t.invoiceAzn)}
                   </TD>
-                  <TD className="text-right tabular-nums">
+                  <TD className="whitespace-nowrap text-right tabular-nums">
                     <span className={t.marginAzn < 0 ? "text-err" : "text-fg-muted"}>
                       {formatMoney(t.marginAzn)}
-                      {t.marginPercent !== null && ` (%${t.marginPercent.toFixed(0)})`}
                     </span>
                   </TD>
                 </TR>
@@ -149,11 +149,11 @@ function RecentCallsCard({ calls }: { calls: DashboardData["recentCalls"] }) {
         <TableContainer>
           <Table>
             <THead>
-              <TR>
-                <TH>Müəssisə</TH>
-                <TH>Tarix</TH>
-                <TH>Vəziyyət</TH>
-              </TR>
+              <TH>Müəssisə</TH>
+              <TH>Nömrə</TH>
+              <TH>Tarix</TH>
+              <TH className="text-right">Müddət</TH>
+              <TH>Vəziyyət</TH>
             </THead>
             <TBody>
               {calls.map((c) => (
@@ -165,12 +165,16 @@ function RecentCallsCard({ calls }: { calls: DashboardData["recentCalls"] }) {
                     >
                       {c.tenantName}
                     </Link>
-                    <p className="text-xs text-fg-faint">
-                      {c.callerNumber || "Naməlum nömrə"}
-                      {c.durationSeconds ? ` · ${formatDuration(c.durationSeconds)}` : ""}
-                    </p>
                   </TD>
-                  <TD className="text-fg-muted">{formatDateTime(c.startedAt)}</TD>
+                  <TD className="whitespace-nowrap text-fg-muted">
+                    {c.callerNumber || "—"}
+                  </TD>
+                  <TD className="whitespace-nowrap text-fg-muted">
+                    {formatDateTime(c.startedAt)}
+                  </TD>
+                  <TD className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                    {formatDuration(c.durationSeconds ?? 0)}
+                  </TD>
                   <TD>
                     <StatusText tone={STATUS_TONE[c.status]}>{STATUS_LABEL[c.status]}</StatusText>
                   </TD>

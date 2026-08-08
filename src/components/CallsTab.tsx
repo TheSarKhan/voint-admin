@@ -186,14 +186,12 @@ export function CallsTab({
         <TableContainer>
           <Table>
             <THead>
-              <TR>
-                <TH>Tarix</TH>
-                <TH>Nömrə</TH>
-                <TH>Müddət</TH>
-                <TH>Vəziyyət</TH>
-                <TH>Bilik bazası</TH>
-                <TH>Dil</TH>
-              </TR>
+              <TH>Tarix</TH>
+              <TH>Nömrə</TH>
+              <TH>Müddət</TH>
+              <TH>Vəziyyət</TH>
+              <TH>Bilik bazası</TH>
+              <TH>Dil</TH>
             </THead>
             <TBody ref={bodyRef}>
               {filtered.length === 0 ? (
