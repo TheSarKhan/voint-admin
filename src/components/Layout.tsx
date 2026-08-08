@@ -7,6 +7,7 @@ import {
   IconReceipt,
   IconSettings,
   IconShield,
+  IconUser,
   IconUsers,
 } from "./icons";
 import { Wordmark } from "./Logo";
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
   { to: "/usage", label: "Hesablaşma", icon: IconReceipt },
   { to: "/roles", label: "Rollar", icon: IconShield },
+  { to: "/users", label: "İstifadəçilər", icon: IconUser },
   { to: "/settings", label: "Ayarlar", icon: IconSettings },
 ];
 
@@ -71,7 +73,7 @@ export function Layout() {
             <p className="truncate text-sm font-medium text-fg">
               {user?.email ?? "—"}
             </p>
-            <p className="truncate text-xs text-fg-faint">SUPER_ADMIN</p>
+            <p className="truncate text-xs text-fg-faint">{user?.roleName ?? "Admin"}</p>
           </div>
           <button
             onClick={handleLogout}

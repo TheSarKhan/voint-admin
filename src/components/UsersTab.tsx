@@ -13,27 +13,29 @@ import {
   type PanelUser,
   type PanelUserCreated,
 } from "../api/users";
-import { IconCopy, IconEdit, IconPlus, IconRefresh, IconTrash } from "./icons";
+import { clientPage, DataTable, type Column } from "./DataTable";
+import {
+  IconCheck,
+  IconCopy,
+  IconEdit,
+  IconLock,
+  IconMore,
+  IconPlus,
+  IconRefresh,
+  IconTrash,
+} from "./icons";
 import {
   Alert,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
+  DropdownMenu,
   Field,
+  InlineSpinner,
   inputCls,
   Modal,
   Select,
   Spinner,
   StatusText,
-  Table,
-  TableContainer,
-  TableEmpty,
-  TBody,
-  TD,
-  TH,
-  THead,
-  TR,
+  type DropdownItem,
 } from "./ui";
 import { formatDateTime } from "../lib/format";
 
@@ -125,7 +127,7 @@ function CreateUserModal({
   onClose,
   onCreated,
 }: {
-  tenantId: string;
+  tenantId?: string;
   roles: AssignableRole[];
   onClose: () => void;
   onCreated: (r: PanelUserCreated) => void;
@@ -215,7 +217,7 @@ function EditUserModal({
   onClose,
   onSaved,
 }: {
-  tenantId: string;
+  tenantId?: string;
   user: PanelUser;
   onClose: () => void;
   onSaved: () => void;
@@ -308,7 +310,36 @@ function roleOptions(user: PanelUser, roles: AssignableRole[]) {
   return options;
 }
 
-export function UsersTab({ tenantId }: { tenantId: string }) {
+/** DataTable-ın axtarış qutusu üçün: hansı sahələr üzrə axtarılsın. */
+function matchesUser(u: PanelUser, needle: string): boolean {
+  return (
+    u.email.toLowerCase().includes(needle) ||
+    (u.fullName ?? "").toLowerCase().includes(needle) ||
+    (u.roleName ?? "").toLowerCase().includes(needle)
+  );
+}
+
+/** DataTable-ın sütun başlıqlarına klikləyəndə sıralama - Column.key ilə uyğun adlar. */
+function compareUser(key: string): (a: PanelUser, b: PanelUser) => number {
+  return (a, b) => {
+    switch (key) {
+      case "email":
+        return a.email.localeCompare(b.email);
+      case "fullName":
+        return (a.fullName ?? "").localeCompare(b.fullName ?? "");
+      case "status":
+        return a.status.localeCompare(b.status);
+      case "lastLoginAt":
+        return (a.lastLoginAt ?? "").localeCompare(b.lastLoginAt ?? "");
+      default:
+        return 0;
+    }
+  };
+}
+
+/** tenantId verilməzsə platforma (admin panelin öz) istifadəçiləri idarə olunur. */
+export function UsersTab({ tenantId }: { tenantId?: string }) {
+  const platform = !tenantId;
   const [users, setUsers] = useState<PanelUser[] | null>(null);
   const [roles, setRoles] = useState<AssignableRole[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -316,6 +347,10 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
   const [passwordResult, setPasswordResult] = useState<PanelUserCreated | null>(null);
   const [editing, setEditing] = useState<PanelUser | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // DataTable öz sorğusunu yalnız "state" (axtarış/sıralama/səhifə) və ya "resetKey" dəyişəndə
+  // təkrarlayır - "fetchPage" hər render-də yeni funksiya olsa belə. Bir əməliyyatdan sonra
+  // cədvəli təzələmək üçün bunu artırırıq (bax act()).
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const reload = () =>
     listUsers(tenantId)
@@ -334,6 +369,7 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
     try {
       await fn();
       await reload();
+      setRefreshTick((t) => t + 1);
     } catch (e) {
       setError(errorText(e, fallback));
     } finally {
@@ -341,150 +377,160 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader
-        title="Panel istifadəçiləri"
-        description="Bu müəssisənin öz panelinə giriş hesabları."
-        actions={
-          <Button
-            size="sm"
-            icon={IconPlus}
-            onClick={() => setCreateOpen(true)}
-            disabled={roles.length === 0}
-          >
-            Yeni istifadəçi
-          </Button>
+  /** Sətirdəki dördlük düymə cərgəsi əvəzinə "..." menyusunun içindəki siyahı. */
+  const actionsFor = (u: PanelUser): DropdownItem[] => [
+    {
+      label: "Redaktə",
+      icon: IconEdit,
+      onSelect: () => setEditing(u),
+    },
+    {
+      label: "Şifrəni sıfırla",
+      icon: IconRefresh,
+      onSelect: () =>
+        act(
+          u.id,
+          async () => setPasswordResult(await resetPassword(tenantId, u.id)),
+          "Şifrə sıfırlanmadı.",
+        ),
+    },
+    {
+      label: u.status === "ACTIVE" ? "Blokla" : "Aç",
+      icon: u.status === "ACTIVE" ? IconLock : IconCheck,
+      onSelect: () =>
+        act(
+          u.id,
+          () => setUserStatus(tenantId, u.id, u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE"),
+          "Vəziyyət dəyişdirilmədi.",
+        ),
+    },
+    {
+      label: "Sil",
+      icon: IconTrash,
+      danger: true,
+      onSelect: () => {
+        if (confirm(`${u.email} silinsin? Bu geri qaytarıla bilməz.`)) {
+          act(u.id, () => deleteUser(tenantId, u.id), "Silinmədi.");
         }
-      />
-      <CardBody className="p-0">
-        {error && (
-          <div className="px-5 pt-4">
-            <Alert tone="err">{error}</Alert>
-          </div>
-        )}
+      },
+    },
+  ];
 
-        {!users ? (
-          <div className="p-5">
-            <Spinner />
-          </div>
+  const columns: Column<PanelUser>[] = [
+    {
+      key: "email",
+      header: "E-poçt",
+      cell: (u) => <span className="font-medium text-fg">{u.email}</span>,
+    },
+    {
+      key: "fullName",
+      header: "Ad",
+      cell: (u) => <span className="text-fg-muted">{u.fullName ?? "—"}</span>,
+    },
+    {
+      header: "Rol",
+      cell: (u) =>
+        roles.length > 0 ? (
+          <Select
+            aria-label="Rol"
+            value={u.roleId ?? ""}
+            onChange={(e) =>
+              act(u.id, () => changeUserRole(tenantId, u.id, e.target.value), "Rol dəyişdirilmədi.")
+            }
+            options={roleOptions(u, roles)}
+            containerClassName="w-40"
+          />
         ) : (
-          <TableContainer>
-            <Table>
-              <THead>
-                <TH>E-poçt</TH>
-                <TH>Ad</TH>
-                <TH>Rol</TH>
-                <TH>Vəziyyət</TH>
-                <TH>Son giriş</TH>
-                <TH className="text-right">Əməliyyat</TH>
-              </THead>
-              <TBody>
-                {users.length === 0 ? (
-                  <TableEmpty
-                    colSpan={6}
-                    message="Hələ istifadəçi yoxdur. Müəssisə panelə girə bilməz."
-                  />
-                ) : (
-                  users.map((u) => (
-                    <TR key={u.id}>
-                      <TD className="font-medium text-fg">{u.email}</TD>
-                      <TD className="text-fg-muted">{u.fullName ?? "—"}</TD>
-                      <TD>
-                        {roles.length > 0 ? (
-                          <Select
-                            aria-label="Rol"
-                            value={u.roleId ?? ""}
-                            onChange={(e) =>
-                              act(
-                                u.id,
-                                () => changeUserRole(tenantId, u.id, e.target.value),
-                                "Rol dəyişdirilmədi.",
-                              )
-                            }
-                            options={roleOptions(u, roles)}
-                            containerClassName="w-40"
-                          />
-                        ) : (
-                          <span className="text-fg-muted">{u.roleName ?? "—"}</span>
-                        )}
-                      </TD>
-                      <TD>
-                        <StatusText tone={u.status === "ACTIVE" ? "ok" : "err"}>
-                          {u.status === "ACTIVE" ? "aktiv" : "bloklanıb"}
-                        </StatusText>
-                      </TD>
-                      <TD className="text-fg-muted">
-                        {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "heç vaxt"}
-                      </TD>
-                      <TD className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={IconEdit}
-                            onClick={() => setEditing(u)}
-                          >
-                            Redaktə
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={IconRefresh}
-                            loading={busyId === u.id}
-                            onClick={() =>
-                              act(
-                                u.id,
-                                async () =>
-                                  setPasswordResult(await resetPassword(tenantId, u.id)),
-                                "Şifrə sıfırlanmadı.",
-                              )
-                            }
-                          >
-                            Şifrə
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              act(
-                                u.id,
-                                () =>
-                                  setUserStatus(
-                                    tenantId,
-                                    u.id,
-                                    u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE",
-                                  ),
-                                "Vəziyyət dəyişdirilmədi.",
-                              )
-                            }
-                          >
-                            {u.status === "ACTIVE" ? "Blokla" : "Aç"}
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            icon={IconTrash}
-                            iconOnly
-                            aria-label="Sil"
-                            onClick={() => {
-                              if (
-                                confirm(`${u.email} silinsin? Bu geri qaytarıla bilməz.`)
-                              ) {
-                                act(u.id, () => deleteUser(tenantId, u.id), "Silinmədi.");
-                              }
-                            }}
-                          />
-                        </div>
-                      </TD>
-                    </TR>
-                  ))
-                )}
-              </TBody>
-            </Table>
-          </TableContainer>
-        )}
-      </CardBody>
+          <span className="text-fg-muted">{u.roleName ?? "—"}</span>
+        ),
+    },
+    {
+      key: "status",
+      header: "Vəziyyət",
+      cell: (u) => (
+        <StatusText tone={u.status === "ACTIVE" ? "ok" : "err"}>
+          {u.status === "ACTIVE" ? "aktiv" : "bloklanıb"}
+        </StatusText>
+      ),
+    },
+    {
+      key: "lastLoginAt",
+      header: "Son giriş",
+      cell: (u) => (
+        <span className="text-fg-muted">
+          {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "heç vaxt"}
+        </span>
+      ),
+    },
+    {
+      header: "Əməliyyat",
+      align: "right",
+      cell: (u) => (
+        <div className="flex justify-end">
+          <DropdownMenu
+            trigger={
+              busyId === u.id ? (
+                <span className="flex h-8 w-8 items-center justify-center">
+                  <InlineSpinner />
+                </span>
+              ) : (
+                <span
+                  aria-label="Əməliyyatlar"
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
+                >
+                  <IconMore width={16} height={16} />
+                </span>
+              )
+            }
+            items={actionsFor(u)}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-fg">
+            {platform ? "Admin panel istifadəçiləri" : "Panel istifadəçiləri"}
+          </h2>
+          <p className="mt-1 text-xs text-fg-muted">
+            {platform
+              ? "Platformanın öz admin panelinə giriş hesabları."
+              : "Bu müəssisənin öz panelinə giriş hesabları."}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          icon={IconPlus}
+          onClick={() => setCreateOpen(true)}
+          disabled={roles.length === 0}
+        >
+          Yeni istifadəçi
+        </Button>
+      </div>
+
+      {error ? (
+        <Alert tone="err">{error}</Alert>
+      ) : !users ? (
+        <Spinner />
+      ) : (
+        <DataTable
+          columns={columns}
+          rowKey={(u) => u.id}
+          defaultSort="email"
+          searchPlaceholder="E-poçt, ad və ya rol üzrə axtar…"
+          emptyMessage={
+            platform
+              ? "Hələ istifadəçi yoxdur. Heç kim admin panelə girə bilməz."
+              : "Hələ istifadəçi yoxdur. Müəssisə panelə girə bilməz."
+          }
+          resetKey={refreshTick}
+          fetchPage={clientPage(users, matchesUser, compareUser)}
+        />
+      )}
 
       {createOpen && (
         <CreateUserModal
@@ -494,6 +540,7 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
           onCreated={(r) => {
             setPasswordResult(r);
             reload();
+            setRefreshTick((t) => t + 1);
           }}
         />
       )}
@@ -503,16 +550,16 @@ export function UsersTab({ tenantId }: { tenantId: string }) {
           tenantId={tenantId}
           user={editing}
           onClose={() => setEditing(null)}
-          onSaved={reload}
+          onSaved={() => {
+            reload();
+            setRefreshTick((t) => t + 1);
+          }}
         />
       )}
 
       {passwordResult && (
-        <PasswordDialog
-          result={passwordResult}
-          onClose={() => setPasswordResult(null)}
-        />
+        <PasswordDialog result={passwordResult} onClose={() => setPasswordResult(null)} />
       )}
-    </Card>
+    </div>
   );
 }

@@ -28,23 +28,31 @@ export interface AssignableRole {
   description: string;
 }
 
-export async function listUsers(tenantId: string): Promise<PanelUser[]> {
-  const { data } = await http.get<PanelUser[]>(`/tenants/${tenantId}/users`);
+/**
+ * tenantId verilməzsə platforma (admin panelin öz) istifadəçiləri idarə olunur — backend-də
+ * ayrıca /admin/users (bax RolesManager-in eyni naxışı /admin/roles üçün). İki fərqli yolun
+ * səbəbi: /tenants/{id}/users artıq işlək, canlıdır — onu dəyişmək əvəzinə yeni, platform-only
+ * bir yol əlavə etmək daha az riskli idi.
+ */
+function basePath(tenantId?: string): string {
+  return tenantId ? `/tenants/${tenantId}/users` : "/admin/users";
+}
+
+export async function listUsers(tenantId?: string): Promise<PanelUser[]> {
+  const { data } = await http.get<PanelUser[]>(basePath(tenantId));
   return data;
 }
 
-export async function listAssignableRoles(tenantId: string): Promise<AssignableRole[]> {
-  const { data } = await http.get<AssignableRole[]>(
-    `/tenants/${tenantId}/users/assignable-roles`,
-  );
+export async function listAssignableRoles(tenantId?: string): Promise<AssignableRole[]> {
+  const { data } = await http.get<AssignableRole[]>(`${basePath(tenantId)}/assignable-roles`);
   return data;
 }
 
 export async function createUser(
-  tenantId: string,
+  tenantId: string | undefined,
   input: { email: string; fullName?: string; roleId: string },
 ): Promise<PanelUserCreated> {
-  const { data } = await http.post<PanelUserCreated>(`/tenants/${tenantId}/users`, input);
+  const { data } = await http.post<PanelUserCreated>(basePath(tenantId), input);
   return data;
 }
 
@@ -53,51 +61,42 @@ export async function createUser(
  * yeni ünvanla girməli olur. Rol, vəziyyət və şifrə toxunulmaz qalır.
  */
 export async function updateUser(
-  tenantId: string,
+  tenantId: string | undefined,
   userId: string,
   input: { email: string; fullName?: string },
 ): Promise<PanelUser> {
-  const { data } = await http.put<PanelUser>(
-    `/tenants/${tenantId}/users/${userId}`,
-    input,
-  );
+  const { data } = await http.put<PanelUser>(`${basePath(tenantId)}/${userId}`, input);
   return data;
 }
 
 export async function resetPassword(
-  tenantId: string,
+  tenantId: string | undefined,
   userId: string,
 ): Promise<PanelUserCreated> {
   const { data } = await http.post<PanelUserCreated>(
-    `/tenants/${tenantId}/users/${userId}/reset-password`,
+    `${basePath(tenantId)}/${userId}/reset-password`,
   );
   return data;
 }
 
 export async function setUserStatus(
-  tenantId: string,
+  tenantId: string | undefined,
   userId: string,
   status: "ACTIVE" | "BLOCKED",
 ): Promise<PanelUser> {
-  const { data } = await http.put<PanelUser>(
-    `/tenants/${tenantId}/users/${userId}/status`,
-    { status },
-  );
+  const { data } = await http.put<PanelUser>(`${basePath(tenantId)}/${userId}/status`, { status });
   return data;
 }
 
 export async function changeUserRole(
-  tenantId: string,
+  tenantId: string | undefined,
   userId: string,
   roleId: string,
 ): Promise<PanelUser> {
-  const { data } = await http.put<PanelUser>(
-    `/tenants/${tenantId}/users/${userId}/role`,
-    { roleId },
-  );
+  const { data } = await http.put<PanelUser>(`${basePath(tenantId)}/${userId}/role`, { roleId });
   return data;
 }
 
-export async function deleteUser(tenantId: string, userId: string): Promise<void> {
-  await http.delete(`/tenants/${tenantId}/users/${userId}`);
+export async function deleteUser(tenantId: string | undefined, userId: string): Promise<void> {
+  await http.delete(`${basePath(tenantId)}/${userId}`);
 }
