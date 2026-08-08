@@ -17,6 +17,7 @@ import {
   type TdHTMLAttributes,
   type ThHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   IconCheckCircle,
   IconChevronDown,
@@ -666,6 +667,17 @@ export interface DropdownItem {
   disabled?: boolean;
 }
 
+/**
+ * Menyu paneli `document.body`-ə portal ilə çıxarılır, `position: fixed` ilə tetikləyicinin
+ * yanına qoyulur.
+ *
+ * Nə üçün: bu menyu tez-tez bir cədvəl sətrinin içində açılır, cədvəl isə üfüqi sürüşmə üçün
+ * `overflow-x-auto` daşıyır. CSS-in öz qaydasına görə bir ox `visible` olmayanda (auto/scroll/
+ * hidden) DİGƏR ox da avtomatik `auto` olur — yəni "yalnız üfüqi sürüşdür" niyyəti CSS-də mövcud
+ * deyil, konteyner şaquli də kəsir. Nəticədə menyu köhnə `position: absolute` ilə açılanda
+ * cədvəlin altında kəsilib qırıq görünürdü. Portal bu problemi kökündən aradan qaldırır: menyu
+ * artıq DOM-da o konteynerin içində deyil, heç bir əcdadın overflow-u onu kəsə bilməz.
+ */
 export function DropdownMenu({
   trigger,
   items,
@@ -676,27 +688,55 @@ export function DropdownMenu({
   align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left?: number; right?: number } | null>(
+    null,
+  );
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
     if (!open) return;
+
+    const place = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPosition(
+        align === "right"
+          ? { top: rect.bottom + 4, right: window.innerWidth - rect.right }
+          : { top: rect.bottom + 4, left: rect.left },
+      );
+    };
+    place();
+
     const onDocClick = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      close();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
     };
+    // Əcdad (məs. cədvəl) sürüşəndə menyu artıq tetikləyicinin yanında qalmır - yenidən
+    // yerləşdirmək əvəzinə bağlamaq həmişə düzgündür və sadədir. `true` = capture, çünki
+    // sürüşən konteyner window-a scroll hadisəsini köpürtmür (bubble etmir).
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     };
-  }, [open]);
+  }, [open, align, close]);
 
   return (
-    <div className="relative inline-block" ref={rootRef}>
+    <>
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -705,42 +745,44 @@ export function DropdownMenu({
       >
         {trigger}
       </button>
-      {open && (
-        <div
-          role="menu"
-          className={cx(
-            "absolute z-40 mt-1 min-w-44 rounded-md border border-border bg-surface py-1 shadow-xl",
-            align === "right" ? "right-0" : "left-0",
-          )}
-        >
-          {items.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.label}
-                type="button"
-                role="menuitem"
-                disabled={item.disabled}
-                onClick={() => {
-                  setOpen(false);
-                  item.onSelect();
-                }}
-                className={cx(
-                  "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-                  item.danger
-                    ? "text-err hover:bg-err/10"
-                    : "text-fg-muted hover:bg-surface-2 hover:text-fg",
-                  focusRing,
-                )}
-              >
-                {Icon && <Icon width={14} height={14} />}
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+      {open &&
+        position &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            style={{ position: "fixed", top: position.top, left: position.left, right: position.right }}
+            className="z-40 min-w-44 rounded-md border border-border bg-surface py-1 shadow-xl"
+          >
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  role="menuitem"
+                  disabled={item.disabled}
+                  onClick={() => {
+                    close();
+                    item.onSelect();
+                  }}
+                  className={cx(
+                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                    item.danger
+                      ? "text-err hover:bg-err/10"
+                      : "text-fg-muted hover:bg-surface-2 hover:text-fg",
+                    focusRing,
+                  )}
+                >
+                  {Icon && <Icon width={14} height={14} />}
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
