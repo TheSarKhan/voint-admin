@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getTenantAnalytics } from "../api/analytics";
+import { pendingApprovalCount } from "../api/approvals";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
+import { ApprovalsTab } from "../components/ApprovalsTab";
 import { BillingSection } from "../components/BillingSection";
 import { CallsTab } from "../components/CallsTab";
 import { ConfigTab } from "../components/ConfigTab";
@@ -27,6 +29,7 @@ const TAB_VALUES = [
   "istifadeciler",
   "rollar",
   "hesablasma",
+  "tesdiqler",
   "konfiqurasiya",
 ];
 
@@ -70,6 +73,7 @@ export function TenantDetailPage() {
   const { tenantKey } = useParams<{ tenantKey: string }>();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
   const [error, setError] = useState<string | null>(null);
   // Tek uzun sehife artiq tasimir: statistika, konfiqurasiya, istifadeciler,
   // hesablasma ve zengler ayri-ayri isler — hamisini alt-alta yigmaq axtarmagi cetinlesdirir.
@@ -108,6 +112,15 @@ export function TenantDetailPage() {
         setTenant(t);
         const a = await getTenantAnalytics(t.id);
         if (!cancelled) setAnalytics(a);
+        // Bu tab acilana qeder komponenti yuklemir (asagida "visited"), amma nisan
+        // ucun sayi hemise bilmek lazimdir - o yuzden ayrica, yungul sorgu.
+        pendingApprovalCount(t.id)
+          .then((n) => {
+            if (!cancelled) setPendingApprovals(n);
+          })
+          .catch(() => {
+            /* nisan gorunmese de sehife islemeye davam etsin */
+          });
       })
       .catch(() => {
         if (!cancelled) setError("Biznes məlumatları yüklənə bilmədi.");
@@ -146,6 +159,11 @@ export function TenantDetailPage() {
           { value: "istifadeciler", label: "İstifadəçilər" },
           { value: "rollar", label: "Rollar" },
           { value: "hesablasma", label: "Hesablaşma" },
+          {
+            value: "tesdiqler",
+            label: "Təsdiqlər",
+            count: pendingApprovals > 0 ? pendingApprovals : undefined,
+          },
           { value: "konfiqurasiya", label: "Konfiqurasiya" },
         ]}
       />
@@ -206,6 +224,16 @@ export function TenantDetailPage() {
       {visited.includes("rollar") && (
         <TabPanel active={tab === "rollar"}>
           <RolesManager key={tenant.id} tenantId={tenant.id} />
+        </TabPanel>
+      )}
+
+      {visited.includes("tesdiqler") && (
+        <TabPanel active={tab === "tesdiqler"}>
+          <ApprovalsTab
+            key={tenant.id}
+            tenantId={tenant.id}
+            onDecided={() => pendingApprovalCount(tenant.id).then(setPendingApprovals)}
+          />
         </TabPanel>
       )}
 
