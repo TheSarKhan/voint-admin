@@ -14,6 +14,7 @@ import { InvoicePage } from "../pages/Invoice";
 import { SettingsPage } from "../pages/Settings";
 import { RolesPage } from "../pages/Roles";
 import { UsersPage } from "../pages/Users";
+import { BillingPlansPage } from "../pages/BillingPlans";
 
 function ProtectedRoute() {
   const token = useAuthStore((s) => s.token);
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: "/tenants", element: <TenantsPage /> },
           { path: "/leads", element: <LeadsPage /> },
           { path: "/usage", element: <UsagePage /> },
+          { path: "/billing-plans", element: <BillingPlansPage /> },
           { path: "/roles", element: <RolesPage /> },
           { path: "/users", element: <UsersPage /> },
           { path: "/settings", element: <SettingsPage /> },

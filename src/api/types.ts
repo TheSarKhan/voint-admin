@@ -49,6 +49,13 @@ export interface Tenant {
   overagePerMinute: number;
   /** Sert aylik tavan (deqiqe); 0 = limitsiz. Plandan ferqlidir — bu xerc muhafizesidir. */
   monthlyMinuteCap: number;
+  maxConcurrentCalls: number;
+  billingPlanId: string | null;
+  billingEnabled: boolean;
+  billingLegalName: string | null;
+  billingTaxId: string | null;
+  billingEmail: string | null;
+  billingDueDays: number | null;
   /** Vapi-deki assistant id; null = hele qurulmayib, zeng qebul etmir. */
   vapiAssistantId: string | null;
   sttDomain: string | null;
@@ -123,6 +130,28 @@ export interface BillingPlanInput {
   includedMinutes: number;
   overagePerMinute: number;
   monthlyMinuteCap: number;
+}
+
+export interface BillingCatalogPlan extends BillingPlanInput {
+  id: string;
+  name: string;
+  dueDays: number;
+  maxConcurrentCalls: number;
+  active: boolean;
+  createdAt: string;
+}
+
+export type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE" | "CANCELLED";
+export interface BillingInvoice {
+  id: string; tenantId: string; period: string; status: InvoiceStatus; dueDate: string | null;
+  monthlyFee: number; includedMinutes: number; overageMinutes: number; overagePerMinute: number;
+  usageMinutes: number; providerCost: number; totalAmount: number; lockedAt: string | null;
+  sentAt: string | null; paidAt: string | null; createdAt: string;
+}
+
+export interface BillingProfileInput {
+  billingPlanId: string | null; billingEnabled: boolean; legalName: string; taxId: string;
+  email: string; dueDays: number | null;
 }
 
 // Backend (com.starsoft.voint.tenant.dto.TenantCreateRequest) - name mecburidir,

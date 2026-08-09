@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { to: "/tenants", label: "Bizneslər", icon: IconBuilding },
   { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
   { to: "/usage", label: "Hesablaşma", icon: IconReceipt },
+  { to: "/billing-plans", label: "Tariflər", icon: IconReceipt },
   { to: "/roles", label: "Rollar", icon: IconShield },
   { to: "/users", label: "İstifadəçilər", icon: IconUser },
   { to: "/settings", label: "Ayarlar", icon: IconSettings },

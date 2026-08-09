@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { AxiosError } from "axios";
 import { getTenantUsage, updateBillingPlan } from "../api/usage";
-import type { Tenant, UsageReport } from "../api/types";
+import { generateInvoice, listBillingPlans, listInvoices, lockInvoice, setInvoiceStatus, updateBillingProfile } from "../api/billing";
+import type { BillingCatalogPlan, BillingInvoice, Tenant, UsageReport } from "../api/types";
 import { IconChevronLeft, IconChevronRight, IconDocument, IconEdit } from "./icons";
 import { Alert, Button, Input, Modal, Spinner } from "./ui";
 import {
@@ -65,6 +66,8 @@ export function BillingSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   // Ay bağlanmayıb: rəqəmlər hər baxışda yenidən hesablanır və sabaha dəyişəcək.
   // Bunu deməmək, göndərilməmiş qaiməni yekun kimi göstərmək deməkdir.
@@ -468,9 +471,11 @@ export function BillingSection({
               ))}
             </div>
           </div>
-          <Button variant="secondary" icon={IconEdit} onClick={() => setEditOpen(true)}>
-            Şərtləri dəyiş
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setInvoiceOpen(true)}>Fakturalar</Button>
+            <Button variant="secondary" onClick={() => setProfileOpen(true)}>Tarif və profil</Button>
+            <Button variant="secondary" icon={IconEdit} onClick={() => setEditOpen(true)}>Şərtləri dəyiş</Button>
+          </div>
         </div>
       </div>
 
@@ -486,8 +491,27 @@ export function BillingSection({
           }}
         />
       )}
+      {profileOpen && <BillingProfileModal tenant={tenant} onClose={() => setProfileOpen(false)} onSaved={(updated) => { onPlanSaved(updated); setProfileOpen(false); }} />}
+      {invoiceOpen && <InvoicesModal tenant={tenant} month={month} onClose={() => setInvoiceOpen(false)} />}
     </div>
   );
+}
+
+function BillingProfileModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose(): void; onSaved(t: Tenant): void }) {
+  const [plans, setPlans] = useState<BillingCatalogPlan[]>([]); const [planId, setPlanId] = useState(tenant.billingPlanId ?? "");
+  const [legalName, setLegalName] = useState(tenant.billingLegalName ?? ""); const [taxId, setTaxId] = useState(tenant.billingTaxId ?? ""); const [email, setEmail] = useState(tenant.billingEmail ?? ""); const [dueDays, setDueDays] = useState(tenant.billingDueDays?.toString() ?? ""); const [enabled, setEnabled] = useState(tenant.billingEnabled); const [saving, setSaving] = useState(false);
+  useEffect(() => { listBillingPlans().then(setPlans).catch(() => undefined); }, []);
+  const submit = async (e: FormEvent) => { e.preventDefault(); setSaving(true); try { onSaved(await updateBillingProfile(tenant.id, { billingPlanId: planId || null, billingEnabled: enabled, legalName, taxId, email, dueDays: dueDays === "" ? null : Number(dueDays) })); } finally { setSaving(false); } };
+  return <Modal size="lg" title="Tarif və faturalama profili" onClose={onClose}><form onSubmit={submit} className="space-y-4"><label className="block text-sm text-fg">Tarif<select className="mt-1.5 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm" value={planId} onChange={e => setPlanId(e.target.value)}><option value="">Fərdi şərtlər</option>{plans.filter(p => p.active || p.id === planId).map(p => <option key={p.id} value={p.id}>{p.name} · {p.monthlyFee.toFixed(2)} ₼/ay</option>)}</select></label><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><Input label="Hüquqi ad" value={legalName} onChange={e => setLegalName(e.target.value)} /><Input label="VÖEN" value={taxId} onChange={e => setTaxId(e.target.value)} /><Input label="Fatura e-poçtu" type="email" value={email} onChange={e => setEmail(e.target.value)} /><Input label="Ödəniş müddəti" help="boş = tarifin müddəti" type="number" min="0" max="365" value={dueDays} onChange={e => setDueDays(e.target.value)} /></div><label className="flex items-center gap-2 text-sm text-fg"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} /> Faturalama aktivdir</label><div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose}>Ləğv et</Button><Button type="submit" disabled={saving}>{saving ? "Saxlanılır…" : "Yadda saxla"}</Button></div></form></Modal>;
+}
+
+function InvoicesModal({ tenant, month, onClose }: { tenant: Tenant; month: string; onClose(): void }) {
+  const [items, setItems] = useState<BillingInvoice[] | null>(null); const [busy, setBusy] = useState(false);
+  const load = () => listInvoices(tenant.id).then(setItems); useEffect(() => { load().catch(() => setItems([])); }, [tenant.id]);
+  const generate = async () => { setBusy(true); try { await generateInvoice(tenant.id, month); await load(); } finally { setBusy(false); } };
+  const lock = async (id: string) => { setBusy(true); try { await lockInvoice(id); await load(); } finally { setBusy(false); } };
+  const paid = async (id: string) => { setBusy(true); try { await setInvoiceStatus(id, "PAID"); await load(); } finally { setBusy(false); } };
+  return <Modal size="lg" title="Fakturalar" onClose={onClose}><div className="space-y-4"><div className="flex items-center justify-between"><p className="text-sm text-fg-muted">{formatMonth(month)} üçün istifadəni faktura kimi dondur.</p><Button disabled={busy} onClick={generate}>Bu ayı yarat</Button></div>{!items ? <Spinner /> : items.length === 0 ? <p className="text-sm text-fg-faint">Hələ faktura yoxdur.</p> : <div className="divide-y divide-border border-y border-border">{items.map(i => <div key={i.id} className="flex items-center justify-between gap-4 py-3 text-sm"><div><p className="font-medium text-fg">{formatMonth(i.period)} · {i.totalAmount.toFixed(2)} ₼</p><p className="text-fg-faint">{i.status === "PAID" ? "Ödənib" : i.lockedAt ? "Dövr kilidlənib" : "Qaralama"}{i.dueDate ? ` · son tarix ${i.dueDate}` : ""}</p></div><div className="flex gap-2">{!i.lockedAt && <Button variant="secondary" disabled={busy} onClick={() => lock(i.id)}>Kilidlə</Button>}{i.status !== "PAID" && <Button variant="secondary" disabled={busy} onClick={() => paid(i.id)}>Ödəndi</Button>}</div></div>)}</div>}<Alert tone="warn">Kilidlənmiş dövrün istifadə və məbləğ rəqəmləri sonradan yenidən hesablanmır.</Alert></div></Modal>;
 }
 
 /**
