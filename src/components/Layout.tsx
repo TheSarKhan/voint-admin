@@ -3,10 +3,12 @@ import { useAuthStore } from "../store/auth";
 import {
   IconBuilding,
   IconDashboard,
+  IconDatabase,
   IconLogout,
   IconReceipt,
   IconSettings,
   IconShield,
+  IconTag,
   IconUser,
   IconUsers,
 } from "./icons";
@@ -19,15 +21,36 @@ interface NavItem {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
-const navItems: NavItem[] = [
-  { to: "/", label: "Ümumi baxış", icon: IconDashboard },
-  { to: "/tenants", label: "Bizneslər", icon: IconBuilding },
-  { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
-  { to: "/usage", label: "Hesablaşma", icon: IconReceipt },
-  { to: "/billing-plans", label: "Tariflər", icon: IconReceipt },
-  { to: "/roles", label: "Rollar", icon: IconShield },
-  { to: "/users", label: "İstifadəçilər", icon: IconUser },
-  { to: "/settings", label: "Ayarlar", icon: IconSettings },
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    label: "Platforma",
+    items: [
+      { to: "/", label: "Ümumi baxış", icon: IconDashboard },
+      { to: "/tenants", label: "Bizneslər", icon: IconBuilding },
+      { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
+    ],
+  },
+  {
+    label: "Mühasibatlıq",
+    items: [
+      { to: "/usage", label: "Hesablaşma", icon: IconDatabase },
+      { to: "/invoices", label: "Fakturalar", icon: IconReceipt },
+      { to: "/billing-plans", label: "Tariflər", icon: IconTag },
+    ],
+  },
+  {
+    label: "İdarəetmə",
+    items: [
+      { to: "/roles", label: "Rollar", icon: IconShield },
+      { to: "/users", label: "İstifadəçilər", icon: IconUser },
+      { to: "/settings", label: "Ayarlar", icon: IconSettings },
+    ],
+  },
 ];
 
 export function Layout() {
@@ -49,23 +72,30 @@ export function Layout() {
           <p className="text-[11px] text-fg-faint">Admin Panel</p>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "bg-surface-2 font-medium text-fg"
-                    : "text-fg-muted hover:bg-surface-2/60 hover:text-fg"
-                }`
-              }
-            >
-              <Icon />
-              {label}
-            </NavLink>
+        <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+          {navSections.map((section) => (
+            <div key={section.label} className="space-y-1">
+              <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-fg-faint">
+                {section.label}
+              </p>
+              {section.items.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === "/"}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                      isActive
+                        ? "bg-surface-2 font-medium text-fg"
+                        : "text-fg-muted hover:bg-surface-2/60 hover:text-fg"
+                    }`
+                  }
+                >
+                  <Icon />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
