@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listUsage } from "../api/usage";
 import type { UsageReport } from "../api/types";
 import { DataTable, type Column } from "../components/DataTable";
@@ -19,6 +19,7 @@ function marginClass(margin: number): string {
 }
 
 export function UsagePage() {
+  const navigate = useNavigate();
   const [month, setMonth] = useState(currentMonth());
   const months = useMemo(() => recentMonths(12), []);
 
@@ -67,7 +68,7 @@ export function UsagePage() {
       header: "Biznes",
       cell: (r) => (
         <Link
-          to={`/tenants/${r.tenantId}`}
+          to={`/tenants/${r.tenantSubdomain ?? r.tenantId}`}
           className="font-medium text-fg hover:underline"
         >
           {r.tenantName}
@@ -195,6 +196,7 @@ export function UsagePage() {
         searchable={false}
         emptyMessage="Bu ay heç bir biznes qeydə alınmayıb."
         resetKey={month}
+        onRowClick={(r) => navigate(`/tenants/${r.tenantSubdomain ?? r.tenantId}`)}
         fetchPage={(state) =>
           listUsage({
             month,

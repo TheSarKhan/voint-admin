@@ -103,7 +103,7 @@ function TopTenantsCard({ tenants }: { tenants: DashboardTenantMargin[] }) {
                 <TR key={t.tenantId}>
                   <TD>
                     <Link
-                      to={`/tenants/${t.tenantId}`}
+                      to={`/tenants/${t.tenantSubdomain ?? t.tenantId}`}
                       className="font-medium text-fg hover:underline"
                     >
                       {t.tenantName}
@@ -160,7 +160,7 @@ function RecentCallsCard({ calls }: { calls: DashboardData["recentCalls"] }) {
                 <TR key={c.id}>
                   <TD>
                     <Link
-                      to={`/tenants/${c.tenantId}/calls/${c.id}`}
+                      to={`/tenants/${c.tenantSubdomain ?? c.tenantId}/calls/${c.id}`}
                       className="font-medium text-fg hover:underline"
                     >
                       {c.tenantName}
