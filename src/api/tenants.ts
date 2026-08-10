@@ -41,6 +41,9 @@ export async function createTenant(input: TenantCreateInput): Promise<Tenant> {
 export async function updateTenantConfig(
   tenantId: string,
   input: {
+    name?: string | null;
+    subdomain?: string | null;
+    phoneNumber?: string | null;
     greetingText?: string | null;
     workingHours?: string | null;
     handoffNumber?: string | null;

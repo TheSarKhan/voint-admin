@@ -28,6 +28,9 @@ export function ConfigTab({
 }) {
   const initialLangs = parseLanguages(tenant.languageConfig);
 
+  const [name, setName] = useState(tenant.name);
+  const [subdomain, setSubdomain] = useState(tenant.subdomain ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(tenant.phoneNumber ?? "");
   const [greeting, setGreeting] = useState(tenant.greetingText ?? "");
   const [hours, setHours] = useState(tenant.workingHours ?? "");
   const [handoff, setHandoff] = useState(tenant.handoffNumber ?? "");
@@ -60,6 +63,9 @@ export function ConfigTab({
     setDone(false);
     try {
       const updated = await updateTenantConfig(tenant.id, {
+        name: name.trim(),
+        subdomain: subdomain.trim(),
+        phoneNumber: phoneNumber.trim(),
         greetingText: greeting.trim(),
         workingHours: hours.trim(),
         handoffNumber: handoff.trim(),
@@ -96,6 +102,44 @@ export function ConfigTab({
             <Alert tone="warn" title="Dil konfiqurasiyası oxunmadı">
               Bazadakı dəyər düzgün JSON deyil, ona görə aşağıda ilkin dəyərlər göstərilir.
               Yadda saxlasan, sahə bu formadakı dəyərlərlə əvəz olunacaq.
+            </Alert>
+          )}
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <Input
+              label="Ad"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setDone(false);
+              }}
+            />
+            <Input
+              label="Panel ünvanı"
+              help="subdomain.voint.az — boş buraxılsa müəssisənin öz paneli olmaz."
+              placeholder="ces"
+              value={subdomain}
+              onChange={(e) => {
+                setSubdomain(e.target.value);
+                setDone(false);
+              }}
+            />
+            <Input
+              label="Telefon nömrəsi"
+              placeholder="+994500000000"
+              value={phoneNumber}
+              onChange={(e) => {
+                setPhoneNumber(e.target.value);
+                setDone(false);
+              }}
+            />
+          </div>
+
+          {subdomain.trim() !== (tenant.subdomain ?? "") && (
+            <Alert tone="warn">
+              Panel ünvanı dəyişir — köhnə ünvanla (
+              <span className="text-fg">{tenant.subdomain ?? "yoxdur"}.voint.az</span>) gələn
+              köhnə keçidlər artıq açılmayacaq.
             </Alert>
           )}
 
