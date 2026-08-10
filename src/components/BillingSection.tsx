@@ -5,7 +5,7 @@ import { getTenantUsage, updateBillingPlan } from "../api/usage";
 import { generateInvoice, listBillingPlans, listInvoices, lockInvoice, setInvoiceStatus, updateBillingProfile } from "../api/billing";
 import type { BillingCatalogPlan, BillingInvoice, Tenant, UsageReport } from "../api/types";
 import { IconChevronLeft, IconChevronRight, IconDocument, IconEdit } from "./icons";
-import { Alert, Button, Input, Modal, Spinner } from "./ui";
+import { Alert, Button, Input, Modal, Spinner, StatusText } from "./ui";
 import {
   currentMonth,
   formatMinutes,
@@ -32,13 +32,26 @@ function nextMonth(ym: string): string {
   return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
 }
 
-/** Rəqəmsiz oxunan nisbət — dolğunluq özü mesajdır. */
-function Meter({ ratio, muted = false }: { ratio: number; muted?: boolean }) {
+/**
+ * Rəqəmsiz oxunan nisbət — dolğunluq özü mesajdır.
+ *
+ * tone="warn"/"err" yalnız TƏHLÜKƏ göstərən ölçülərdə (aylıq tavan) istifadə olunmalıdır -
+ * "daxil olan dəqiqə" kimi neytral ölçülər üçün defolt boz qalır.
+ */
+function Meter({
+  ratio,
+  tone = "neutral",
+}: {
+  ratio: number;
+  tone?: "neutral" | "muted" | "warn" | "err";
+}) {
   const width = Math.max(Math.min(ratio, 1) * 100, ratio > 0 ? 0.4 : 0);
+  const fillCls =
+    tone === "err" ? "bg-err" : tone === "warn" ? "bg-warn" : tone === "muted" ? "bg-fg-faint" : "bg-fg-muted";
   return (
     <div className="relative h-2 border border-border bg-surface-2">
       <div
-        className={`absolute inset-y-0 left-0 ${muted ? "bg-fg-faint" : "bg-fg-muted"}`}
+        className={`absolute inset-y-0 left-0 ${fillCls}`}
         style={{ width: `${width}%`, minWidth: width > 0 ? "3px" : 0 }}
       />
     </div>
@@ -304,14 +317,26 @@ export function BillingSection({
                 {plan.monthlyMinuteCap > 0 && (
                   <div>
                     <div className="mb-2 flex items-baseline justify-between text-sm">
-                      <span className="text-fg">Aylıq tavan</span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-fg">Aylıq tavan</span>
+                        {capRatio >= 1 ? (
+                          <StatusText tone="err">bloklanıb</StatusText>
+                        ) : capRatio >= 0.8 ? (
+                          <StatusText tone="warn">hədə yaxın</StatusText>
+                        ) : null}
+                      </span>
                       <span className="tabular-nums text-fg-muted">
                         <span className="text-fg">{formatMinutes(usage.minutes)}</span> /{" "}
                         {formatNumber(plan.monthlyMinuteCap)} dəq · %
                         {(capRatio * 100).toFixed(1)}
                       </span>
                     </div>
-                    <Meter ratio={capRatio} muted />
+                    <Meter ratio={capRatio} tone={capRatio >= 1 ? "err" : capRatio >= 0.8 ? "warn" : "muted"} />
+                    {capRatio >= 1 && (
+                      <p className="mt-2 text-xs text-fg-faint">
+                        Tavan keçilib — agent yeni zəngə cavab vermir, dövr bitənə qədər.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -505,13 +530,108 @@ function BillingProfileModal({ tenant, onClose, onSaved }: { tenant: Tenant; onC
   return <Modal size="lg" title="Tarif və faturalama profili" onClose={onClose}><form onSubmit={submit} className="space-y-4"><label className="block text-sm text-fg">Tarif<select className="mt-1.5 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm" value={planId} onChange={e => setPlanId(e.target.value)}><option value="">Fərdi şərtlər</option>{plans.filter(p => p.active || p.id === planId).map(p => <option key={p.id} value={p.id}>{p.name} · {p.monthlyFee.toFixed(2)} ₼/ay</option>)}</select></label><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><Input label="Hüquqi ad" value={legalName} onChange={e => setLegalName(e.target.value)} /><Input label="VÖEN" value={taxId} onChange={e => setTaxId(e.target.value)} /><Input label="Fatura e-poçtu" type="email" value={email} onChange={e => setEmail(e.target.value)} /><Input label="Ödəniş müddəti" help="boş = tarifin müddəti" type="number" min="0" max="365" value={dueDays} onChange={e => setDueDays(e.target.value)} /></div><label className="flex items-center gap-2 text-sm text-fg"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} /> Faturalama aktivdir</label><div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose}>Ləğv et</Button><Button type="submit" disabled={saving}>{saving ? "Saxlanılır…" : "Yadda saxla"}</Button></div></form></Modal>;
 }
 
+const INVOICE_STATUS_LABEL: Record<BillingInvoice["status"], string> = {
+  DRAFT: "Qaralama",
+  SENT: "Göndərilib",
+  PAID: "Ödənib",
+  OVERDUE: "Gecikib",
+  CANCELLED: "Ləğv edilib",
+};
+
 function InvoicesModal({ tenant, month, onClose }: { tenant: Tenant; month: string; onClose(): void }) {
-  const [items, setItems] = useState<BillingInvoice[] | null>(null); const [busy, setBusy] = useState(false);
-  const load = () => listInvoices(tenant.id).then(setItems); useEffect(() => { load().catch(() => setItems([])); }, [tenant.id]);
-  const generate = async () => { setBusy(true); try { await generateInvoice(tenant.id, month); await load(); } finally { setBusy(false); } };
-  const lock = async (id: string) => { setBusy(true); try { await lockInvoice(id); await load(); } finally { setBusy(false); } };
-  const paid = async (id: string) => { setBusy(true); try { await setInvoiceStatus(id, "PAID"); await load(); } finally { setBusy(false); } };
-  return <Modal size="lg" title="Fakturalar" onClose={onClose}><div className="space-y-4"><div className="flex items-center justify-between"><p className="text-sm text-fg-muted">{formatMonth(month)} üçün istifadəni faktura kimi dondur.</p><Button disabled={busy} onClick={generate}>Bu ayı yarat</Button></div>{!items ? <Spinner /> : items.length === 0 ? <p className="text-sm text-fg-faint">Hələ faktura yoxdur.</p> : <div className="divide-y divide-border border-y border-border">{items.map(i => <div key={i.id} className="flex items-center justify-between gap-4 py-3 text-sm"><div><p className="font-medium text-fg">{formatMonth(i.period)} · {i.totalAmount.toFixed(2)} ₼</p><p className="text-fg-faint">{i.status === "PAID" ? "Ödənib" : i.lockedAt ? "Dövr kilidlənib" : "Qaralama"}{i.dueDate ? ` · son tarix ${i.dueDate}` : ""}</p></div><div className="flex gap-2">{!i.lockedAt && <Button variant="secondary" disabled={busy} onClick={() => lock(i.id)}>Kilidlə</Button>}{i.status !== "PAID" && <Button variant="secondary" disabled={busy} onClick={() => paid(i.id)}>Ödəndi</Button>}</div></div>)}</div>}<Alert tone="warn">Kilidlənmiş dövrün istifadə və məbləğ rəqəmləri sonradan yenidən hesablanmır.</Alert></div></Modal>;
+  const [items, setItems] = useState<BillingInvoice[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = () => listInvoices(tenant.id).then(setItems);
+  useEffect(() => {
+    load().catch(() => setItems([]));
+  }, [tenant.id]);
+
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      await load();
+    } catch (e) {
+      setError(errorText(e, "Əməliyyat alınmadı."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal size="lg" title="Fakturalar" onClose={onClose}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-fg-muted">{formatMonth(month)} üçün istifadəni faktura kimi dondur.</p>
+          <Button disabled={busy} onClick={() => act(() => generateInvoice(tenant.id, month))}>
+            Bu ayı yarat
+          </Button>
+        </div>
+
+        {error && <Alert tone="err">{error}</Alert>}
+
+        {!items ? (
+          <Spinner />
+        ) : items.length === 0 ? (
+          <p className="text-sm text-fg-faint">Hələ faktura yoxdur.</p>
+        ) : (
+          <div className="divide-y divide-border border-y border-border">
+            {items.map((i) => (
+              <div key={i.id} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <div>
+                  <p className="font-medium text-fg">
+                    {formatMonth(i.period)} · {i.totalAmount.toFixed(2)} ₼
+                  </p>
+                  <p className="flex items-center gap-2 text-fg-faint">
+                    <StatusText tone={i.status === "PAID" ? "ok" : i.status === "OVERDUE" ? "err" : "neutral"}>
+                      {INVOICE_STATUS_LABEL[i.status]}
+                    </StatusText>
+                    {i.lockedAt && "· kilidlənib"}
+                    {i.dueDate ? ` · son tarix ${i.dueDate}` : ""}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {!i.lockedAt && (
+                    <Button variant="secondary" disabled={busy} onClick={() => act(() => lockInvoice(i.id))}>
+                      Kilidlə
+                    </Button>
+                  )}
+                  {i.status !== "SENT" && i.status !== "PAID" && (
+                    <Button
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => act(() => setInvoiceStatus(i.id, "SENT"))}
+                    >
+                      Göndər
+                    </Button>
+                  )}
+                  {i.status !== "PAID" && (
+                    <Button variant="secondary" disabled={busy} onClick={() => act(() => setInvoiceStatus(i.id, "PAID"))}>
+                      Ödəndi
+                    </Button>
+                  )}
+                  {i.status !== "CANCELLED" && i.status !== "PAID" && (
+                    <Button
+                      variant="danger"
+                      disabled={busy}
+                      onClick={() => act(() => setInvoiceStatus(i.id, "CANCELLED"))}
+                    >
+                      Ləğv et
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Alert tone="warn">Kilidlənmiş dövrün istifadə və məbləğ rəqəmləri sonradan yenidən hesablanmır.</Alert>
+      </div>
+    </Modal>
+  );
 }
 
 /**
@@ -539,6 +659,9 @@ function TermsModal({
     String(tenant.overagePerMinute ?? 0),
   );
   const [minuteCap, setMinuteCap] = useState(String(tenant.monthlyMinuteCap ?? 0));
+  const [maxConcurrentCalls, setMaxConcurrentCalls] = useState(
+    String(tenant.maxConcurrentCalls ?? 1),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -553,6 +676,7 @@ function TermsModal({
           includedMinutes: Number(includedMinutes),
           overagePerMinute: Number(overagePerMinute),
           monthlyMinuteCap: Number(minuteCap),
+          maxConcurrentCalls: Number(maxConcurrentCalls),
         }),
       );
     } catch (e) {
@@ -599,6 +723,14 @@ function TermsModal({
           min="0"
           value={minuteCap}
           onChange={(e) => setMinuteCap(e.target.value)}
+        />
+        <Input
+          label="Paralel zəng limiti"
+          help="Agentin eyni anda cavab verə biləcəyi maksimum zəng sayı."
+          type="number"
+          min="1"
+          value={maxConcurrentCalls}
+          onChange={(e) => setMaxConcurrentCalls(e.target.value)}
         />
 
         {/* Geriyə dönük təsir gerçəkdir və gizlədilməməlidir: qüvvəyə minmə tarixi
