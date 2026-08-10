@@ -105,6 +105,13 @@ export function formatMonth(ym: string): string {
   return `${MONTHS[m - 1]} ${y}`;
 }
 
+/** "2026-07" -> "İyl 26" - qrafik oxu üçün qısa forma, formatDayShort ilə eyni məntiq. */
+export function formatMonthShort(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m || m < 1 || m > 12) return ym;
+  return `${MONTHS[m - 1].slice(0, 3)} ${String(y).slice(-2)}`;
+}
+
 /** Bu ayin "YYYY-MM" formati (brauzerin yerli vaxti ile). */
 export function currentMonth(): string {
   const d = new Date();

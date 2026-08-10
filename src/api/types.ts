@@ -70,6 +70,8 @@ export interface Tenant {
 export interface UsageReport {
   tenantId: string;
   tenantName: string;
+  /** Yoxdursa null - linklərdə tenantId-yə qayıdır. */
+  tenantSubdomain: string | null;
   month: string; // "2026-07"
   usage: {
     calls: number;
@@ -141,9 +143,36 @@ export interface BillingCatalogPlan extends BillingPlanInput {
   createdAt: string;
 }
 
+// Backend (com.starsoft.voint.billing.dto.BillingPlanDetailResponse).
+export type QuotaStatus = "OK" | "WARNING" | "BLOCKED";
+
+export interface BillingPlanTenant {
+  id: string;
+  name: string;
+  subdomain: string | null;
+  quotaStatus: QuotaStatus;
+  currentMonthInvoiceAzn: number;
+  currentMonthCalls: number;
+}
+
+export interface BillingPlanDetail {
+  plan: BillingCatalogPlan;
+  tenantCount: number;
+  currentMonthRevenueAzn: number;
+  currentMonthCalls: number;
+  currentMonthMinutes: number;
+  quota: { ok: number; warning: number; blocked: number };
+  /** Son 12 təqvim ayı, ən köhnəsi əvvəldə. */
+  revenueTrend: { month: string; revenueAzn: number }[];
+  tenants: BillingPlanTenant[];
+}
+
 export type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE" | "CANCELLED";
 export interface BillingInvoice {
-  id: string; tenantId: string; period: string; status: InvoiceStatus; dueDate: string | null;
+  id: string; tenantId: string;
+  /** Tək tenant-ın öz siyahısında (BillingSection) boş qalır - platform-geniş siyahıda dolur. */
+  tenantName: string | null; tenantSubdomain: string | null;
+  period: string; status: InvoiceStatus; dueDate: string | null;
   monthlyFee: number; includedMinutes: number; overageMinutes: number; overagePerMinute: number;
   usageMinutes: number; providerCost: number; totalAmount: number; lockedAt: string | null;
   sentAt: string | null; paidAt: string | null; createdAt: string;
@@ -287,6 +316,8 @@ export interface DashboardRecentCall {
   id: string;
   tenantId: string;
   tenantName: string;
+  /** Yoxdursa null - linklərdə tenantId-yə qayıdır. */
+  tenantSubdomain: string | null;
   callerNumber: string | null;
   status: CallStatus;
   startedAt: string;
@@ -296,6 +327,8 @@ export interface DashboardRecentCall {
 export interface DashboardTenantMargin {
   tenantId: string;
   tenantName: string;
+  /** Yoxdursa null - linklərdə tenantId-yə qayıdır. */
+  tenantSubdomain: string | null;
   calls: number;
   invoiceAzn: number;
   marginAzn: number;
