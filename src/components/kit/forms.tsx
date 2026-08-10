@@ -1,7 +1,7 @@
 /**
  * Voint UI kit — form idareedicileri (admin panelin istifade etdiyi alt coxluq).
  * Kod voint-panel ile eynidir; admin-de istifade olunmayan komponentler (Checkbox,
- * Radio, Switch, FileUpload, NumberInput, SearchInput, Date/Time) daxil edilmeyib.
+ * Radio, FileUpload, NumberInput, SearchInput, Date/Time) daxil edilmeyib.
  */
 import {
   useId,
@@ -417,6 +417,84 @@ export function Select({
       </div>
       {help && !error && <HelpText id={helpId}>{help}</HelpText>}
       {error && <ErrorText id={errId}>{error}</ErrorText>}
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Switch                                                              */
+/* ================================================================== */
+
+export function Switch({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled = false,
+  id,
+  "aria-label": ariaLabel,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  description?: string;
+  disabled?: boolean;
+  id?: string;
+  /** Görünən `label` yoxdursa (mes. cədvəl xanası) - əks-səda oxuyucu üçün ad. */
+  "aria-label"?: string;
+}) {
+  const autoId = useId();
+  const switchId = id ?? autoId;
+  const labelId = `${switchId}-label`;
+
+  const control = (
+    <button
+      type="button"
+      id={switchId}
+      role="switch"
+      aria-checked={checked}
+      aria-label={label ? undefined : ariaLabel}
+      aria-labelledby={label ? labelId : undefined}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cx(
+        "relative h-5 w-9 shrink-0 rounded-[4px] border transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        checked
+          ? "border-accent bg-accent"
+          : "border-border-strong bg-surface-2",
+        focusRing,
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cx(
+          "absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-[2px] transition-[left]",
+          checked ? "left-[18px] bg-accent-fg" : "left-[2px] bg-fg-faint",
+        )}
+      />
+    </button>
+  );
+
+  if (!label) return control;
+
+  return (
+    <div className="flex items-start gap-3">
+      {control}
+      <div className="min-w-0">
+        <label
+          id={labelId}
+          htmlFor={switchId}
+          className={cx(
+            "block text-sm text-fg",
+            disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+          )}
+        >
+          {label}
+        </label>
+        {description && (
+          <p className="mt-0.5 text-xs text-fg-muted">{description}</p>
+        )}
+      </div>
     </div>
   );
 }
