@@ -208,6 +208,7 @@ export function LeadsPage() {
         searchPlaceholder="Şirkət, ad, email və ya nömrə…"
         emptyMessage="Hələ heç bir sorğu gəlməyib."
         resetKey={`${statusFilter}:${reload}`}
+        onRowClick={(l) => setEditing(l)}
         toolbar={
           <Select
             aria-label="Status filtri"

@@ -529,6 +529,7 @@ export function UsersTab({ tenantId }: { tenantId?: string }) {
           }
           resetKey={refreshTick}
           fetchPage={clientPage(users, matchesUser, compareUser)}
+          onRowClick={(u) => setEditing(u)}
         />
       )}
 
@@ -537,9 +538,12 @@ export function UsersTab({ tenantId }: { tenantId?: string }) {
           tenantId={tenantId}
           roles={roles}
           onClose={() => setCreateOpen(false)}
-          onCreated={(r) => {
+          onCreated={async (r) => {
             setPasswordResult(r);
-            reload();
+            // reload() bitmeden tick-i artirsaq, DataTable KOHNE `users` bagli fetchPage
+            // qurur ve bir de tetiklenmir (bax DataTable-in resetKey qeydi) - yeni setir
+            // yalniz elle sehife yenilenende gorunur.
+            await reload();
             setRefreshTick((t) => t + 1);
           }}
         />
@@ -550,8 +554,8 @@ export function UsersTab({ tenantId }: { tenantId?: string }) {
           tenantId={tenantId}
           user={editing}
           onClose={() => setEditing(null)}
-          onSaved={() => {
-            reload();
+          onSaved={async () => {
+            await reload();
             setRefreshTick((t) => t + 1);
           }}
         />
