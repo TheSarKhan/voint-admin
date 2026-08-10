@@ -22,6 +22,8 @@ export interface AuthUser {
   role: string;
   /** Granular rolun görünən adı (məs. "Platforma admini") - sidebar-da bunu göstər, `role`-u yox. */
   roleName: string | null;
+  /** resurs adı -> icazə verilmiş əməliyyatlar. Nav/düymələr bunu göstərməzdən əvvəl yoxlasın. */
+  permissions: Record<string, string[]>;
 }
 
 export interface LoginResponse {
@@ -132,13 +134,13 @@ export interface BillingPlanInput {
   includedMinutes: number;
   overagePerMinute: number;
   monthlyMinuteCap: number;
+  maxConcurrentCalls: number;
 }
 
 export interface BillingCatalogPlan extends BillingPlanInput {
   id: string;
   name: string;
   dueDays: number;
-  maxConcurrentCalls: number;
   active: boolean;
   createdAt: string;
 }

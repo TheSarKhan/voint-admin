@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
+import { useHasPermission } from "../lib/permissions";
 import {
   IconBuilding,
   IconDashboard,
@@ -19,6 +20,8 @@ interface NavItem {
   to: string;
   label: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Yoxdursa hər zaman göstərilir (məs. Ümumi baxış). Varsa, icazə olmasa link gizlənir. */
+  permission?: { resource: string; action: string };
 }
 
 interface NavSection {
@@ -31,24 +34,24 @@ const navSections: NavSection[] = [
     label: "Platforma",
     items: [
       { to: "/", label: "Ümumi baxış", icon: IconDashboard },
-      { to: "/tenants", label: "Bizneslər", icon: IconBuilding },
-      { to: "/leads", label: "Pilot sorğuları", icon: IconUsers },
+      { to: "/tenants", label: "Bizneslər", icon: IconBuilding, permission: { resource: "TENANT", action: "READ" } },
+      { to: "/leads", label: "Pilot sorğuları", icon: IconUsers, permission: { resource: "LEAD", action: "READ" } },
     ],
   },
   {
     label: "Mühasibatlıq",
     items: [
-      { to: "/usage", label: "Hesablaşma", icon: IconDatabase },
-      { to: "/invoices", label: "Fakturalar", icon: IconReceipt },
-      { to: "/billing-plans", label: "Tariflər", icon: IconTag },
+      { to: "/usage", label: "Hesablaşma", icon: IconDatabase, permission: { resource: "BILLING", action: "READ" } },
+      { to: "/invoices", label: "Fakturalar", icon: IconReceipt, permission: { resource: "BILLING", action: "READ" } },
+      { to: "/billing-plans", label: "Tariflər", icon: IconTag, permission: { resource: "BILLING", action: "READ" } },
     ],
   },
   {
     label: "İdarəetmə",
     items: [
-      { to: "/roles", label: "Rollar", icon: IconShield },
-      { to: "/users", label: "İstifadəçilər", icon: IconUser },
-      { to: "/settings", label: "Ayarlar", icon: IconSettings },
+      { to: "/roles", label: "Rollar", icon: IconShield, permission: { resource: "ROLE", action: "READ" } },
+      { to: "/users", label: "İstifadəçilər", icon: IconUser, permission: { resource: "USER", action: "READ" } },
+      { to: "/settings", label: "Ayarlar", icon: IconSettings, permission: { resource: "PROVIDER", action: "READ" } },
     ],
   },
 ];
@@ -57,11 +60,22 @@ export function Layout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const hasPermission = useHasPermission();
 
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
   };
+
+  // Boş qalan bölmə başlığı tək-tük görünməsin — bütün linkləri gizlənən bölmə keçilir.
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => !item.permission || hasPermission(item.permission.resource, item.permission.action),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="flex h-full">
@@ -73,7 +87,7 @@ export function Layout() {
         </div>
 
         <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label} className="space-y-1">
               <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-fg-faint">
                 {section.label}

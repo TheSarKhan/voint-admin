@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AxiosError } from "axios";
 import { IconSearch } from "./icons";
 import {
   Card,
@@ -159,8 +160,12 @@ export function DataTable<T>({
       .then((r) => {
         if (!cancelled) setResult(r);
       })
-      .catch(() => {
-        if (!cancelled) setError("Məlumat yüklənmədi.");
+      .catch((e) => {
+        if (cancelled) return;
+        // Backend deliberately puts a specific reason in `detail` (icazə yoxdur, hansı ehtiyac
+        // etdiyi ilə) — göstərməsək, "icazən yoxdur" ilə "server yıxılıb" eyni görünür.
+        const err = e as AxiosError<{ detail?: string }>;
+        setError(err.response?.data?.detail ?? "Məlumat yüklənmədi.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

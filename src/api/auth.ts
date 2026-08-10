@@ -15,6 +15,7 @@ interface BackendMeResponse {
   email: string;
   role: string;
   roleName: string | null;
+  permissions: Record<string, string[]>;
 }
 
 function toAuthUser(me: BackendMeResponse): AuthUser {
@@ -24,6 +25,7 @@ function toAuthUser(me: BackendMeResponse): AuthUser {
     tenantId: me.tenantId,
     role: me.role,
     roleName: me.roleName,
+    permissions: me.permissions ?? {},
   };
 }
 
