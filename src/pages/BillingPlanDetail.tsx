@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AxiosError } from "axios";
 import { getBillingPlanDetail, updateBillingCatalogPlan } from "../api/billing";
 import type { BillingPlanDetail, BillingPlanTenant, QuotaStatus } from "../api/types";
 import { BillingPlanModal } from "../components/BillingPlanModal";
@@ -38,6 +39,11 @@ const QUOTA_COLOR_VAR: Record<QuotaStatus, string> = {
   BLOCKED: "--color-err",
 };
 
+function errorText(e: unknown, fallback: string): string {
+  const err = e as AxiosError<{ detail?: string }>;
+  return err.response?.data?.detail ?? fallback;
+}
+
 function matchesTenant(t: BillingPlanTenant, needle: string): boolean {
   return t.name.toLowerCase().includes(needle) || (t.subdomain ?? "").toLowerCase().includes(needle);
 }
@@ -66,6 +72,7 @@ export function BillingPlanDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
   const load = () =>
@@ -83,6 +90,7 @@ export function BillingPlanDetailPage() {
   const toggleActive = async () => {
     if (!detail || !id) return;
     setToggling(true);
+    setToggleError(null);
     try {
       const p = detail.plan;
       await updateBillingCatalogPlan(id, {
@@ -96,6 +104,8 @@ export function BillingPlanDetailPage() {
         active: !p.active,
       });
       await load();
+    } catch (e) {
+      setToggleError(errorText(e, "Dəyişdirilmədi."));
     } finally {
       setToggling(false);
     }
@@ -157,6 +167,12 @@ export function BillingPlanDetailPage() {
           </div>
         }
       />
+
+      {toggleError && (
+        <div className="mb-4">
+          <Alert tone="err">{toggleError}</Alert>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Bu paketdə müəssisə" value={String(detail.tenantCount)} />

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { listAllInvoices, lockInvoice, setInvoiceStatus } from "../api/billing";
 import type { BillingInvoice, InvoiceStatus } from "../api/types";
 import { clientPage, DataTable, type Column } from "../components/DataTable";
 import { IconCheck, IconClose, IconLock, IconMore, IconSend } from "../components/icons";
 import {
+  Alert,
   DropdownMenu,
   InlineSpinner,
   PageHeader,
@@ -14,6 +16,11 @@ import {
   type StatusTone,
 } from "../components/ui";
 import { currentMonth, formatDate, formatMoney, formatMonth, recentMonths } from "../lib/format";
+
+function errorText(e: unknown, fallback: string): string {
+  const err = e as AxiosError<{ detail?: string }>;
+  return err.response?.data?.detail ?? fallback;
+}
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   DRAFT: "Qaralama",
@@ -78,6 +85,7 @@ export function InvoicesPage() {
   const [invoices, setInvoices] = useState<BillingInvoice[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const load = () => listAllInvoices(month).then(setInvoices);
 
@@ -89,10 +97,13 @@ export function InvoicesPage() {
 
   const act = async (id: string, fn: () => Promise<unknown>) => {
     setBusyId(id);
+    setError(null);
     try {
       await fn();
       await load();
       setRefreshTick((t) => t + 1);
+    } catch (e) {
+      setError(errorText(e, "Əməliyyat alınmadı."));
     } finally {
       setBusyId(null);
     }
@@ -198,6 +209,12 @@ export function InvoicesPage() {
   return (
     <div>
       <PageHeader title="Fakturalar" subtitle="Bütün müəssisələrin fakturaları - kim ödəyib, kim gecikib." />
+
+      {error && (
+        <div className="mb-4">
+          <Alert tone="err">{error}</Alert>
+        </div>
+      )}
 
       <DataTable
         columns={columns}
