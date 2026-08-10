@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { listInvoices } from "../api/billing";
 import { getTenantUsage } from "../api/usage";
 import { getPublicConfig } from "../api/publicConfig";
 import { getTenant } from "../api/tenants";
-import type { Tenant, UsageReport } from "../api/types";
+import type { BillingInvoice, Tenant } from "../api/types";
 import { IconArrowLeft, IconDownload } from "../components/icons";
-import { Alert, Spinner } from "../components/ui";
+import { Alert, Spinner, StatusText } from "../components/ui";
 import {
   currentMonth,
+  formatDate,
   formatMinutes,
   formatMoney,
   formatMonth,
@@ -22,6 +24,11 @@ import {
  * PDF sriftlerinde yoxdur - serverde ayrica Unicode srift yerlesdirmek lazim gelerdi.
  * Brauzer ise artiq Poppins-i yukleyib (icinde butun AZ herfleri var, yoxlanilib),
  * ona gore burada cap etmek hem sadedir, hem de herflerin duzgun cixmasina zemanet verir.
+ *
+ * Meblegler DONMUŞ fakturadan gelir, canli hesabatdan yox — həmin ay artiq generasiya
+ * olunubsa. Aksi halda (BillingInvoice heç yaradilmayibsa) canli hesabata qayidiriq, bu
+ * halda sened bir PROQNOZDUR: aylar sonu kilidlenmis fakturanin reqemleri deyisə bilmez,
+ * amma generasiya olunmamis ay ucun gostərilesi başqa bir şey yoxdur.
  */
 
 /** Deterministik qaime nomresi: eyni ay + eyni biznes -> her defe eyni nomre. */
@@ -35,39 +42,64 @@ interface LineItem {
   amount: number;
 }
 
-function buildLineItems(report: UsageReport): LineItem[] {
+/** İkisindən biri: DONMUŞ faktura qeydi, ya da canlı hesabat. Sənəd eyni şəkildə qurulur. */
+interface InvoiceData {
+  tenantId: string;
+  tenantName: string;
+  month: string;
+  monthlyFee: number;
+  includedMinutes: number;
+  overageMinutes: number;
+  overagePerMinute: number;
+  /** Yekun məbləğ — sətirlərin cəmi yenidən hesablanmır, birbaşa bu göstərilir. */
+  totalAmount: number;
+  /** Yalnız donmuş fakturada olur. */
+  dueDate: string | null;
+  status: BillingInvoice["status"] | null;
+  /** Yalnız canlı hesabatda olur — faktura bu rəqəmi saxlamır. */
+  callsCount: number | null;
+  usageMinutes: number;
+}
+
+function buildLineItems(data: InvoiceData): LineItem[] {
   const items: LineItem[] = [];
 
-  if (report.plan.monthlyFee > 0) {
+  if (data.monthlyFee > 0) {
     items.push({
       description: "Aylıq abunə — Voint AI səs agenti",
       detail:
-        report.plan.includedMinutes > 0
-          ? `${formatNumber(report.plan.includedMinutes)} dəqiqə daxil`
+        data.includedMinutes > 0
+          ? `${formatNumber(data.includedMinutes)} dəqiqə daxil`
           : "Limitsiz",
-      amount: report.plan.monthlyFee,
+      amount: data.monthlyFee,
     });
   }
 
-  if (report.plan.overageMinutes > 0) {
+  if (data.overageMinutes > 0) {
     items.push({
       description: "Əlavə danışıq dəqiqələri",
-      detail: `${formatMinutes(report.plan.overageMinutes)} × ${formatMoney(
-        report.plan.overagePerMinute,
-      )}`,
-      amount: report.plan.overageMinutes * report.plan.overagePerMinute,
+      detail: `${formatMinutes(data.overageMinutes)} × ${formatMoney(data.overagePerMinute)}`,
+      amount: data.overageMinutes * data.overagePerMinute,
     });
   }
 
   return items;
 }
 
+const STATUS_LABEL: Record<BillingInvoice["status"], string> = {
+  DRAFT: "Qaralama",
+  SENT: "Göndərilib",
+  PAID: "Ödənib",
+  OVERDUE: "Gecikib",
+  CANCELLED: "Ləğv edilib",
+};
+
 export function InvoicePage() {
   const { tenantKey = "" } = useParams();
   const [params] = useSearchParams();
   const month = params.get("month") ?? currentMonth();
 
-  const [report, setReport] = useState<UsageReport | null>(null);
+  const [data, setData] = useState<InvoiceData | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,15 +113,54 @@ export function InvoicePage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    // Unvanda subdomain ola biler, usage endpoint-i ise UUID isteyir — ardicil gedirik:
-    // evvelce muessiseni hell et, sonra onun heqiqi id-si ile hesabati cek.
+    // Unvanda subdomain ola biler, hesabat/faktura endpoint-leri ise UUID isteyir —
+    // evvelce muessiseni hell et, sonra onun heqiqi id-si ile davam et.
     (async () => {
       try {
         const t = await getTenant(tenantKey);
         if (cancelled) return;
         setTenant(t);
-        const r = await getTenantUsage(t.id, month);
-        if (!cancelled) setReport(r);
+
+        const [invoices, report] = await Promise.all([
+          listInvoices(t.id).catch(() => [] as BillingInvoice[]),
+          getTenantUsage(t.id, month).catch(() => null),
+        ]);
+        if (cancelled) return;
+
+        const frozen = invoices.find((i) => i.period === month);
+        if (frozen) {
+          setData({
+            tenantId: frozen.tenantId,
+            tenantName: frozen.tenantName ?? t.name,
+            month: frozen.period,
+            monthlyFee: frozen.monthlyFee,
+            includedMinutes: frozen.includedMinutes,
+            overageMinutes: frozen.overageMinutes,
+            overagePerMinute: frozen.overagePerMinute,
+            totalAmount: frozen.totalAmount,
+            dueDate: frozen.dueDate,
+            status: frozen.status,
+            callsCount: report?.usage.calls ?? null,
+            usageMinutes: frozen.usageMinutes,
+          });
+        } else if (report) {
+          setData({
+            tenantId: report.tenantId,
+            tenantName: report.tenantName,
+            month: report.month,
+            monthlyFee: report.plan.monthlyFee,
+            includedMinutes: report.plan.includedMinutes,
+            overageMinutes: report.plan.overageMinutes,
+            overagePerMinute: report.plan.overagePerMinute,
+            totalAmount: report.invoiceAzn,
+            dueDate: null,
+            status: null,
+            callsCount: report.usage.calls,
+            usageMinutes: report.usage.minutes,
+          });
+        } else {
+          setError("Qaimə məlumatı yüklənmədi.");
+        }
       } catch {
         if (!cancelled) setError("Qaimə məlumatı yüklənmədi.");
       } finally {
@@ -103,10 +174,9 @@ export function InvoicePage() {
 
   if (loading) return <Spinner />;
   if (error) return <Alert tone="err">{error}</Alert>;
-  if (!report) return null;
+  if (!data) return null;
 
-  const items = buildLineItems(report);
-  const total = items.reduce((s, i) => s + i.amount, 0);
+  const items = buildLineItems(data);
 
   return (
     <>
@@ -135,16 +205,25 @@ export function InvoicePage() {
           className="inline-flex items-center gap-2 text-sm text-fg-muted transition-colors hover:text-fg"
         >
           <IconArrowLeft width={15} height={15} />
-          {report.tenantName}
+          {data.tenantName}
         </Link>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-md bg-fg px-3.5 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
-        >
-          <IconDownload width={15} height={15} />
-          PDF yarat
-        </button>
+        <div className="flex items-center gap-3">
+          {data.status ? (
+            <StatusText tone={data.status === "PAID" ? "ok" : "neutral"}>
+              Rəsmi faktura · {STATUS_LABEL[data.status]}
+            </StatusText>
+          ) : (
+            <StatusText tone="warn">Hələ yaradılmayıb · canlı proqnoz</StatusText>
+          )}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-md bg-fg px-3.5 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+          >
+            <IconDownload width={15} height={15} />
+            PDF yarat
+          </button>
+        </div>
       </div>
 
       {/* Sened. Qesden ag vereq: qaime cap ucundur, panelin qaranliq temasi ucun yox. */}
@@ -166,11 +245,14 @@ export function InvoicePage() {
           <div className="text-right">
             <p className="text-lg font-semibold tracking-tight">QAİMƏ</p>
             <p className="mt-1 font-mono text-xs text-[#555]">
-              {invoiceNumber(report.tenantId, report.month)}
+              {invoiceNumber(data.tenantId, data.month)}
             </p>
-            <p className="mt-0.5 text-xs text-[#555]">
-              {monthEndDate(report.month)}
-            </p>
+            <p className="mt-0.5 text-xs text-[#555]">{monthEndDate(data.month)}</p>
+            {data.dueDate && (
+              <p className="mt-0.5 text-xs text-[#555]">
+                Son ödəniş: {formatDate(data.dueDate)}
+              </p>
+            )}
           </div>
         </header>
 
@@ -179,7 +261,7 @@ export function InvoicePage() {
             <p className="text-[11px] uppercase tracking-[0.08em] text-[#888]">
               Müştəri
             </p>
-            <p className="mt-1.5 font-medium">{report.tenantName}</p>
+            <p className="mt-1.5 font-medium">{data.tenantName}</p>
             {tenant?.phoneNumber && (
               <p className="text-sm text-[#555]">{tenant.phoneNumber}</p>
             )}
@@ -188,10 +270,10 @@ export function InvoicePage() {
             <p className="text-[11px] uppercase tracking-[0.08em] text-[#888]">
               Hesabat dövrü
             </p>
-            <p className="mt-1.5 font-medium">{formatMonth(report.month)}</p>
+            <p className="mt-1.5 font-medium">{formatMonth(data.month)}</p>
             <p className="text-sm text-[#555]">
-              {formatNumber(report.usage.calls)} zəng ·{" "}
-              {formatMinutes(report.usage.minutes)}
+              {data.callsCount !== null && `${formatNumber(data.callsCount)} zəng · `}
+              {formatMinutes(data.usageMinutes)}
             </p>
           </div>
         </section>
@@ -232,7 +314,7 @@ export function InvoicePage() {
             <tr>
               <td className="pt-5 text-right font-medium">Yekun</td>
               <td className="pt-5 text-right text-xl font-semibold tabular-nums">
-                {formatMoney(total)}
+                {formatMoney(data.totalAmount)}
               </td>
             </tr>
           </tfoot>
@@ -246,33 +328,31 @@ export function InvoicePage() {
           <dl className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-4">
             <div>
               <dt className="text-xs text-[#777]">Zəng sayı</dt>
-              <dd className="tabular-nums">{formatNumber(report.usage.calls)}</dd>
+              <dd className="tabular-nums">
+                {data.callsCount !== null ? formatNumber(data.callsCount) : "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-[#777]">Ümumi danışıq</dt>
-              <dd className="tabular-nums">
-                {formatMinutes(report.usage.minutes)}
-              </dd>
+              <dd className="tabular-nums">{formatMinutes(data.usageMinutes)}</dd>
             </div>
             <div>
               <dt className="text-xs text-[#777]">Daxil olan</dt>
-              <dd className="tabular-nums">
-                {formatNumber(report.plan.includedMinutes)} dəq
-              </dd>
+              <dd className="tabular-nums">{formatNumber(data.includedMinutes)} dəq</dd>
             </div>
             <div>
               <dt className="text-xs text-[#777]">Artıq danışıq</dt>
               <dd className="tabular-nums">
-                {report.plan.overageMinutes > 0
-                  ? formatMinutes(report.plan.overageMinutes)
-                  : "—"}
+                {data.overageMinutes > 0 ? formatMinutes(data.overageMinutes) : "—"}
               </dd>
             </div>
           </dl>
         </section>
 
         <footer className="mt-10 border-t border-[#ddd] pt-4 text-xs leading-relaxed text-[#777]">
-          Ödəniş qaimə tarixindən etibarən 10 iş günü ərzində həyata keçirilməlidir.
+          {data.dueDate
+            ? `Ödəniş ${formatDate(data.dueDate)} tarixinə qədər həyata keçirilməlidir.`
+            : "Ödəniş qaimə tarixindən etibarən 10 iş günü ərzində həyata keçirilməlidir."}{" "}
           Suallarınız üçün bizimlə əlaqə saxlayın.
         </footer>
       </div>
