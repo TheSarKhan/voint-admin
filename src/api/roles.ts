@@ -57,12 +57,19 @@ export async function deleteRole(roleId: string): Promise<void> {
   await http.delete(`/admin/roles/${roleId}`);
 }
 
+/**
+ * Ad toqquşması xəta vermir - backend avtomatik "Operator 2" kimi adlandırır, əl ilə sonradan
+ * dəyişmək/silmək operatorun öz işidir.
+ */
 export async function copyTemplateToTenant(
   templateId: string,
   tenantId: string,
+  departmentId?: string | null,
 ): Promise<RoleDetail> {
   const { data } = await http.post<RoleDetail>(
     `/admin/roles/${templateId}/copy-to/${tenantId}`,
+    null,
+    { params: departmentId ? { departmentId } : undefined },
   );
   return data;
 }
