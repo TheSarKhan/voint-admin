@@ -2,16 +2,20 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getTenantAnalytics } from "../api/analytics";
 import { pendingApprovalCount } from "../api/approvals";
+import { getQuestions } from "../api/questions";
 import { getTenant } from "../api/tenants";
 import type { AnalyticsOverview, Tenant } from "../api/types";
 import { ApprovalsTab } from "../components/ApprovalsTab";
 import { BillingSection } from "../components/BillingSection";
 import { CallsTab } from "../components/CallsTab";
 import { ConfigTab } from "../components/ConfigTab";
+import { CustomersTab } from "../components/CustomersTab";
+import { QuestionsTab } from "../components/QuestionsTab";
 import { RagTab } from "../components/RagTab";
 import { RolesManager } from "../components/RolesManager";
 import { UsersTab } from "../components/UsersTab";
 import { VapiStatus } from "../components/VapiStatus";
+import { BarChart } from "../components/charts/BarChart";
 import { IconArrowLeft } from "../components/icons";
 import { StatCard } from "../components/StatCard";
 import { Card, PageHeader, Spinner, Tabs } from "../components/ui";
@@ -26,6 +30,8 @@ const TAB_VALUES = [
   "umumi",
   "zengler",
   "bilik-bazasi",
+  "suallar",
+  "musteriler",
   "istifadeciler",
   "rollar",
   "hesablasma",
@@ -45,26 +51,14 @@ function TabPanel({
 }
 
 function CallsBarChart({ data }: { data: AnalyticsOverview["callsByDay"] }) {
-  const max = Math.max(...data.map((d) => d.count), 1);
   return (
-    <div className="flex h-48 items-end gap-3">
-      {data.map((d) => {
-        const h = Math.max((d.count / max) * 100, 4);
-        return (
-          <div key={d.date} className="group flex flex-1 flex-col items-center gap-2">
-            <span className="text-xs text-fg-muted opacity-0 transition-opacity group-hover:opacity-100">
-              {d.count}
-            </span>
-            <div
-              className="w-full rounded-t-sm bg-border-strong transition-colors group-hover:bg-fg-muted"
-              style={{ height: `${h}%` }}
-              title={`${formatDate(d.date)}: ${d.count} zəng`}
-            />
-            <span className="text-[11px] text-fg-faint">{formatDayShort(d.date)}</span>
-          </div>
-        );
-      })}
-    </div>
+    <BarChart
+      data={data.map((d) => ({
+        label: formatDayShort(d.date),
+        value: d.count,
+        tooltip: `${formatDate(d.date)}: ${d.count} zəng`,
+      }))}
+    />
   );
 }
 
@@ -74,6 +68,7 @@ export function TenantDetailPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [openQuestions, setOpenQuestions] = useState(0);
   const [error, setError] = useState<string | null>(null);
   // Tek uzun sehife artiq tasimir: statistika, konfiqurasiya, istifadeciler,
   // hesablasma ve zengler ayri-ayri isler — hamisini alt-alta yigmaq axtarmagi cetinlesdirir.
@@ -121,6 +116,13 @@ export function TenantDetailPage() {
           .catch(() => {
             /* nisan gorunmese de sehife islemeye davam etsin */
           });
+        getQuestions(t.id, "OPEN")
+          .then((qs) => {
+            if (!cancelled) setOpenQuestions(qs.length);
+          })
+          .catch(() => {
+            /* nisan gorunmese de sehife islemeye davam etsin */
+          });
       })
       .catch(() => {
         if (!cancelled) setError("Biznes məlumatları yüklənə bilmədi.");
@@ -156,6 +158,12 @@ export function TenantDetailPage() {
           { value: "umumi", label: "Ümumi" },
           { value: "zengler", label: "Zənglər" },
           { value: "bilik-bazasi", label: "Bilik bazası" },
+          {
+            value: "suallar",
+            label: "Cavabsız suallar",
+            count: openQuestions > 0 ? openQuestions : undefined,
+          },
+          { value: "musteriler", label: "Müştərilər" },
           { value: "istifadeciler", label: "İstifadəçilər" },
           { value: "rollar", label: "Rollar" },
           { value: "hesablasma", label: "Hesablaşma" },
@@ -212,6 +220,22 @@ export function TenantDetailPage() {
       {visited.includes("bilik-bazasi") && (
         <TabPanel active={tab === "bilik-bazasi"}>
           <RagTab key={tenant.id} tenantId={tenant.id} />
+        </TabPanel>
+      )}
+
+      {visited.includes("suallar") && (
+        <TabPanel active={tab === "suallar"}>
+          <QuestionsTab
+            key={tenant.id}
+            tenantId={tenant.id}
+            onChanged={() => getQuestions(tenant.id, "OPEN").then((qs) => setOpenQuestions(qs.length))}
+          />
+        </TabPanel>
+      )}
+
+      {visited.includes("musteriler") && (
+        <TabPanel active={tab === "musteriler"}>
+          <CustomersTab key={tenant.id} tenantId={tenant.id} />
         </TabPanel>
       )}
 
