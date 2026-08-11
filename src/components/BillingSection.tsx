@@ -8,6 +8,7 @@ import { IconChevronLeft, IconChevronRight, IconDocument, IconEdit } from "./ico
 import { Alert, Button, Input, Modal, Spinner, StatusText } from "./ui";
 import {
   currentMonth,
+  formatDate,
   formatMinutes,
   formatMoney,
   formatMonth,
@@ -590,7 +591,7 @@ function InvoicesModal({ tenant, month, onClose }: { tenant: Tenant; month: stri
                       {INVOICE_STATUS_LABEL[i.status]}
                     </StatusText>
                     {i.lockedAt && "· kilidlənib"}
-                    {i.dueDate ? ` · son tarix ${i.dueDate}` : ""}
+                    {i.dueDate ? ` · son tarix ${formatDate(i.dueDate)}` : ""}
                   </p>
                 </div>
                 <div className="flex gap-2">
