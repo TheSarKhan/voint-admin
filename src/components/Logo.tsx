@@ -67,11 +67,10 @@ interface WordmarkProps {
 }
 
 /**
- * Tam soz-isare: "Voint." + "t"-nin sag-yuxarisinda yasil arclar.
+ * Tam soz-isare: "Voint" + "t"-nin sag-yuxarisinda yasil arclar.
  *
  * Arclar butun sozun deyil, MEHZ "t"-nin yaninda dayanir — ona gore "t" ayrica span-dedir.
- * Sonda nöqte var, arclar ise onun ustunden asir; belə olmasa nöqte elave olunanda arclar
- * sağa surusherdi.
+ * Arc qrupu "t" herfinin cap hundurluyunden yuxari cixacaq sekilde qaldirilib.
  *
  * Olculer brend faylindan cixarilib: orada cap hundurluyu ~240px, arc qrupu ~140x150px,
  * arcin alt kenari bazadan ~150px yuxarida ve sol kenari "t"-nin sag kenarindan ~45px
@@ -93,18 +92,17 @@ export function Wordmark({ size = "1.5rem", className = "", style }: WordmarkPro
         <BrandArcs
           className="absolute"
           style={{
-            // Brend faylindan olculub: baza xetti y=305, cap hundurluyu 177px -> ~253px font.
-            // Arc qrupu y=85..195 => bazadan 0.44em yuxarida baslayir, 0.44em hundurluyunde;
-            // sol kenari ise "t"-nin sag kenarina yapisir, herfin UZERINE minmir.
+            // Arc qrupu "t"-nin cap hundurluyunden (~0.70em) yuxari cixsin deye
+            // bottom deyeri artirilib; sol kenari ise "t"-nin sag kenarina yapisir,
+            // herfin UZERINE minmir.
             left: "100%",
             marginLeft: "-0.03em",
-            bottom: "0.44em",
+            bottom: "0.62em",
             width: "0.40em",
             height: "0.44em",
           }}
         />
       </span>
-      <span aria-hidden="true">.</span>
     </span>
   );
 }
