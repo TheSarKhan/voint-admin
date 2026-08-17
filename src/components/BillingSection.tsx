@@ -734,12 +734,13 @@ function TermsModal({
           onChange={(e) => setMaxConcurrentCalls(e.target.value)}
         />
 
-        {/* Geriyə dönük təsir gerçəkdir və gizlədilməməlidir: qüvvəyə minmə tarixi
-            backend-də yoxdur, ona görə söz vermək əvəzinə olanı deyirik. */}
+        {/* Geriyə dönük təsir yalnız CARİ aya aiddir: keçmiş aylar hər gecə avtomatik
+            bağlanıb kilidlənir (BillingService.closeElapsedMonths), ona görə onların
+            qaiməsi bir daha yenidən hesablanmır. */}
         <Alert tone="warn">
           Dəyişiklik dərhal qüvvəyə minir və <span className="text-fg">cari ayın</span>{" "}
-          hesabına da tətbiq olunur. Keçmiş ayların qaiməsi də yenidən hesablanır — aylar
-          hələ bağlanmır.
+          hələ bağlanmamış hesabına tətbiq olunur. Keçmiş aylar avtomatik bağlandığı üçün
+          onlara toxunmur.
         </Alert>
 
         {error && <p className="text-sm text-err">{error}</p>}
