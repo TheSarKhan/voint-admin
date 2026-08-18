@@ -10,6 +10,7 @@ import {
   CardBody,
   CardHeader,
   Input,
+  Select,
   Textarea,
 } from "./ui";
 import { formatDateTime } from "../lib/format";
@@ -37,6 +38,7 @@ export function ConfigTab({
   const [domain, setDomain] = useState(tenant.sttDomain ?? "");
   const [topic, setTopic] = useState(tenant.sttTopic ?? "");
   const [vocabulary, setVocabulary] = useState(tenant.sttVocabulary ?? "");
+  const [sttProvider, setSttProvider] = useState(tenant.sttProvider || "soniox");
   const [defLang, setDefLang] = useState(initialLangs.def);
   const [supported, setSupported] = useState<string[]>(initialLangs.supported);
 
@@ -73,6 +75,7 @@ export function ConfigTab({
         sttDomain: domain.trim(),
         sttTopic: topic.trim(),
         sttVocabulary: words.join(","),
+        sttProvider,
       });
       onSaved(updated);
       setDone(true);
@@ -221,6 +224,20 @@ export function ConfigTab({
               setVocabulary(e.target.value);
               setDone(false);
             }}
+          />
+
+          <Select
+            label="Səs tanıma (STT) provayderi"
+            help="Daxili A/B sınaq üçün — tenant öz panelindən görmür. Google-un Azərbaycan üçün xüsusi rejimi yoxdur, yalnız 'Multilingual'."
+            value={sttProvider}
+            onChange={(e) => {
+              setSttProvider(e.target.value);
+              setDone(false);
+            }}
+            options={[
+              { value: "soniox", label: "Soniox (defolt)" },
+              { value: "google", label: "Google (sınaq)" },
+            ]}
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">

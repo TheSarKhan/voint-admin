@@ -51,6 +51,7 @@ export async function updateTenantConfig(
     sttDomain?: string | null;
     sttTopic?: string | null;
     sttVocabulary?: string | null;
+    sttProvider?: string | null;
   },
 ): Promise<Tenant> {
   const { data } = await http.put<Tenant>(`/tenants/${tenantId}/config`, input);

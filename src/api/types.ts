@@ -63,6 +63,8 @@ export interface Tenant {
   sttDomain: string | null;
   sttTopic: string | null;
   sttVocabulary: string | null;
+  /** "soniox" | "google" - A/B sınaq üçün, tenant özü görmür. */
+  sttProvider: string;
   createdAt: string; // ISO
 }
 
