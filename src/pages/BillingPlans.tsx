@@ -26,12 +26,12 @@ export function BillingPlansPage() {
   };
 
   const columns: Column<BillingCatalogPlan>[] = [
-    { key: "name", header: "Paket", sortable: true, cell: p => <span className="font-medium text-fg">{p.name}</span> },
-    { key: "monthlyFee", header: "Aylıq ödəniş", sortable: true, cell: p => `${p.monthlyFee.toFixed(2)} ₼` },
-    { key: "includedMinutes", header: "Daxil dəqiqə", sortable: true, cell: p => p.includedMinutes || "—" },
-    { key: "overagePerMinute", header: "Aşım", sortable: true, cell: p => `${p.overagePerMinute.toFixed(2)} ₼/dəq` },
-    { key: "maxConcurrentCalls", header: "Paralel zəng", sortable: true, cell: p => `${p.maxConcurrentCalls} xətt` },
-    { key: "dueDays", header: "Ödəniş müddəti", sortable: true, cell: p => `${p.dueDays} gün` },
+    { key: "name", header: "Paket", cell: p => <span className="font-medium text-fg">{p.name}</span> },
+    { key: "monthlyFee", header: "Aylıq ödəniş", cell: p => `${p.monthlyFee.toFixed(2)} ₼` },
+    { key: "includedMinutes", header: "Daxil dəqiqə", cell: p => p.includedMinutes || "—" },
+    { key: "overagePerMinute", header: "Aşım", cell: p => `${p.overagePerMinute.toFixed(2)} ₼/dəq` },
+    { key: "maxConcurrentCalls", header: "Paralel zəng", cell: p => `${p.maxConcurrentCalls} xətt` },
+    { key: "dueDays", header: "Ödəniş müddəti", cell: p => `${p.dueDays} gün` },
     {
       key: "active", header: "Aktiv", cell: p => (
         <div className="flex items-center gap-2">
