@@ -752,7 +752,7 @@ export function DropdownMenu({
             ref={menuRef}
             role="menu"
             style={{ position: "fixed", top: position.top, left: position.left, right: position.right }}
-            className="z-40 min-w-44 rounded-md border border-border bg-surface py-1 shadow-xl"
+            className="z-50 min-w-48 rounded-2xl border border-[#e5e5e5] bg-white p-1.5 shadow-2xl"
           >
             {items.map((item) => {
               const Icon = item.icon;
@@ -767,10 +767,10 @@ export function DropdownMenu({
                     item.onSelect();
                   }}
                   className={cx(
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                    "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-medium rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                     item.danger
-                      ? "text-err hover:bg-err/10"
-                      : "text-fg-muted hover:bg-surface-2 hover:text-fg",
+                      ? "text-red-600 hover:bg-red-50"
+                      : "text-[#0a0a0a] hover:bg-[#f5f5f5]",
                     focusRing,
                   )}
                 >
